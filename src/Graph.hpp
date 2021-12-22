@@ -5,10 +5,14 @@
 struct Node
 {
     const std::uint32_t id;
-    std::vector<const Node *> links; // povezave do vozlišča
+    float rank, rank_now, rank_prev;
+    std::vector<const Node *> links_in;  // povezave do strani
+    std::vector<const Node *> links_out; // povezave iz strani
+
     Node();
     Node(const std::uint32_t id);
-    void add_link(const Node& link);
+    void add_link_in(const Node& link);
+    void add_link_out(const Node& link);
 };
 
 struct Graph
@@ -20,4 +24,7 @@ struct Graph
 
     Graph(const char *filename);
     bool has_connection(const std::uint32_t a, const std::uint32_t b) const;
+
+    void rank();
+    void rank_omp();
 };
