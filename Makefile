@@ -1,9 +1,9 @@
-main: src/main.cpp Matrix.o
+main: src/main.cpp Graph.o 
 	mkdir -p bin
-	g++ -O2 -o bin/main src/main.cpp Matrix.o -fopenmp
+	g++ -O2 -o bin/main src/main.cpp Graph.o
 
-Matrix.o: src/Matrix.cpp
-	g++ -O2 -c -o Matrix.o src/Matrix.cpp -fopenmp
+Graph.o: src/Graph.cpp
+	g++ -O2 -c -o Graph.o src/Graph.cpp
 
 clean:
 	'rm' *.o
