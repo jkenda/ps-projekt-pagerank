@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include "Graph.hpp"
+#include "Timer.hpp"
 
 using std::cout; using std::endl;
 
@@ -32,19 +33,27 @@ int main(int argc, char **argv)
     cout << "Število strani : " << pages.nnodes << '\n';
     cout << "Število povezav: " << pages.nedges << '\n';
 
-    pages.rank();
+    {
+        TIMER("sequential")
+        pages.rank();
+    }
 
     for (int i = 0; i < 10; i++) {
         cout << i << ": " << pages.nodes[i].rank << '\n';
     }
 
-    pages.rank_omp();
+    {
+        TIMER("OpenMP")
+        pages.rank_omp();
+    }
+
     cout << '\n';
 
     for (int i = 0; i < 10; i++) {
         cout << i << ": " << pages.nodes[i].rank << '\n';
     }
 
+    /*
     std::vector<Node> ranked;
     for (auto &[id, node] : pages.nodes) {
         ranked.emplace_back(node);
@@ -54,5 +63,5 @@ int main(int argc, char **argv)
     for (int i = 0; i < 10; i++) {
         cout << i << ": " << ranked[i].rank << '\n';
     }
-
+    */
 }
