@@ -7,16 +7,16 @@
 #include <tuple>
 #include "Graph.hpp"
 
-const float delta = 1e-24;
+#define DELTA (1e-8)
 
-using std::size_t; using std::uint32_t; using std::string; using std::max;
+using namespace std;
 
 Node::Node()
-: id(0), rank(0)
+: id(0), rank(0), nlinks_out(0)
 {
 }
 Node::Node(const uint32_t id)
-: id(id), rank(0)
+: id(id), rank(0), nlinks_out(0)
 {
 }
 
@@ -25,23 +25,23 @@ void Node::add_link_in(const Node& link)
     links_in.push_back(&link);
 }
 
-void Node::add_link_out(const Node& link)
+void Node::add_link_out()
 {
-    links_out.push_back(&link);
+    nlinks_out++;
 }
 
 
 Graph::Graph(const char *filename)
 {
-    std::ifstream is(filename, std::ios::in);
+    ifstream is(filename, ios::in);
     if (!is.is_open()) {
         exit(1);
     }
 
     string line, word;
 
-    std::stringstream words;
-    std::getline(is, line, '\n');
+    stringstream words;
+    getline(is, line, '\n');
 
     // preskoči komentarje in preberi št. povezav
     while (line[0] == '#') {
@@ -57,7 +57,7 @@ Graph::Graph(const char *filename)
             }
         }
 
-        std::getline(is, line, '\n');
+        getline(is, line, '\n');
     }
     words.clear();
     words.str(line);
@@ -74,7 +74,7 @@ Graph::Graph(const char *filename)
 
     // dodaj prvo povezavo v množico
     node_b.add_link_in(node_a);
-    node_a.add_link_out(node_b);
+    node_a.add_link_out();
 
     // največji id, največje število povezav do nekega vozlišča
     max_id = max(a, b);
@@ -88,7 +88,7 @@ Graph::Graph(const char *filename)
 
         // dodaj povezavi vozliščema
         node_b.add_link_in(node_a);
-        node_a.add_link_out(node_b);
+        node_a.add_link_out();
 
         // največji id, največje število povezav do nekega vozlišča
         max_id = max(max_id, max(a, b));
@@ -123,29 +123,30 @@ void Graph::rank()
 
         for (auto &[id, node] : nodes) {
 
-            if (std::abs(node.rank - node.rank_prev) >= delta) {
+            if (abs(node.rank - node.rank_prev) >= DELTA) {
                 stop = false;
 
                 float sum = 0;
 
                 for (const Node *src : node.links_in) {
-                    sum += src->rank / src->links_out.size();
+                    sum += src->rank / src->nlinks_out;
                 }
 
                 sum *= d;
                 node.rank_now = (1 - d) / nnodes + sum;
             }
         }
+
         for (auto &[id, node] : nodes) {
+            node.rank_prev = node.rank;
             node.rank      = node.rank_now;
-            node.rank_prev = node.rank_now;
         }
     }
+
 }
 
 void Graph::rank_omp()
 {
-    // TODO: optimizacija
     const float d = 0.85f;
 
     for (auto &[id, node] : nodes) {
@@ -156,6 +157,7 @@ void Graph::rank_omp()
     bool stop = false;
 
     while (!stop) {
+        #pragma omp single
         stop = true;
 
         #pragma omp parallel for
@@ -164,7 +166,7 @@ void Graph::rank_omp()
             if (it == nodes.end()) continue;
             Node &node = it->second;
 
-            if (std::abs(node.rank - node.rank_prev) >= delta) {
+            if (abs(node.rank - node.rank_prev) >= DELTA) {
                 if (stop) {
                     #pragma omp atomic write
                     stop = false;
@@ -173,7 +175,7 @@ void Graph::rank_omp()
                 float sum = 0;
 
                 for (const Node *src : node.links_in) {
-                    sum += src->rank / src->links_out.size();
+                    sum += src->rank / src->nlinks_out;
                 }
 
                 sum *= d;
@@ -187,8 +189,9 @@ void Graph::rank_omp()
             if (it == nodes.end()) continue;
             Node &node = it->second;
 
+            node.rank_prev = node.rank;
             node.rank      = node.rank_now;
-            node.rank_prev = node.rank_now;
         }
     }
+
 }

@@ -7,12 +7,12 @@ struct Node
     const std::uint32_t id;
     float rank, rank_now, rank_prev;
     std::vector<const Node *> links_in;  // povezave do strani
-    std::vector<const Node *> links_out; // povezave iz strani
+    size_t nlinks_out; // povezave iz strani
 
     Node();
     Node(const std::uint32_t id);
     void add_link_in(const Node& link);
-    void add_link_out(const Node& link);
+    void add_link_out();
 };
 
 struct Graph

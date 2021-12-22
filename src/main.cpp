@@ -16,20 +16,6 @@ int main(int argc, char **argv)
     Graph pages("web-Google.txt");
     cout << "file read.      " << std::endl;
 
-    // debug - ne bo v končni verziji
-    {
-        cout << "0 -> 11342: " << (pages.has_connection(0, 11342) ? "yes" : "no") << endl;
-        cout << "11342 -> 0: " << (pages.has_connection(11342, 0) ? "yes" : "no") << endl;
-        cout << "11342 -> 1: " << (pages.has_connection(11342, 1) ? "yes" : "no") << endl;
-
-        cout << pages.nodes[11342].id << ": ";
-        for (const Node *l : pages.nodes[11342].links_in) {
-            cout << l->id << " ";
-        }
-        cout << endl;
-        cout << pages.max_id << '\n' << pages.max_links << endl;
-    }
-
     cout << "Število strani : " << pages.nnodes << '\n';
     cout << "Število povezav: " << pages.nedges << '\n';
 

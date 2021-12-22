@@ -1,12 +1,19 @@
-main: src/main.cpp Graph.o Timer.o
+CPPC= g++
+FLAGS= -O2 -fopenmp -s -mtune=native
+
+
+all: main.o Graph.o Timer.o
 	mkdir -p bin
-	g++ -O2 -o bin/main src/main.cpp Graph.o Timer.o -fopenmp
+	$(CPPC) $(FLAGS) -o bin/main main.o Graph.o Timer.o
+
+main.o: src/main.cpp
+	$(CPPC) $(FLAGS) -c -o main.o src/main.cpp
 
 Graph.o: src/Graph.cpp
-	g++ -O2 -c -o Graph.o src/Graph.cpp -fopenmp
+	$(CPPC) $(FLAGS) -c -o Graph.o src/Graph.cpp
 
 Timer.o: src/Timer.cpp
-	g++ -O2 -c -o Timer.o src/Timer.cpp
+	$(CPPC) $(FLAGS) -c -o Timer.o src/Timer.cpp
 
 clean:
 	'rm' *.o
