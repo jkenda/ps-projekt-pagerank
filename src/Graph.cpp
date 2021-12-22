@@ -157,11 +157,10 @@ void Graph::rank_omp()
     bool stop = false;
 
     while (!stop) {
-        #pragma omp single
         stop = true;
 
         #pragma omp parallel for
-        for (size_t id = 0; id < max_id; id++) {
+        for (size_t id = 0; id <= max_id; id++) {
             const auto &it = nodes.find(id);
             if (it == nodes.end()) continue;
             Node &node = it->second;
@@ -184,7 +183,7 @@ void Graph::rank_omp()
         }
 
         #pragma omp parallel for
-        for (size_t id = 0; id < max_id; id++) {
+        for (size_t id = 0; id <= max_id; id++) {
             const auto &it = nodes.find(id);
             if (it == nodes.end()) continue;
             Node &node = it->second;
