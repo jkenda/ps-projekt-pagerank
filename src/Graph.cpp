@@ -52,9 +52,6 @@ Graph::Graph(const char *filename)
             if (word == "Nodes:") {
                 words >> nnodes;
             }
-            else if (word == "Edges:") {
-                words >> nedges;
-            }
         }
 
         getline(is, line, '\n');
@@ -63,7 +60,6 @@ Graph::Graph(const char *filename)
     words.str(line);
 
     nodes.reserve(nnodes);
-    nodes_v.reserve(nnodes);
 
     uint32_t a, b;
     words >> a; words >> b;
@@ -76,6 +72,7 @@ Graph::Graph(const char *filename)
     // dodaj prvo povezavo v množico
     node_b.add_link_in(node_a);
     node_a.add_link_out();
+    nedges = 1;
 
     // največji id
     max_id = max(a, b);
@@ -89,10 +86,14 @@ Graph::Graph(const char *filename)
         // dodaj povezavi vozliščema
         node_b.add_link_in(node_a);
         node_a.add_link_out();
+        nedges++;
 
         // največji id
         max_id = max(max_id, max(a, b));
     }
+
+    nnodes = nodes.size();
+    nodes_v.reserve(nnodes);
 
     for (auto &[id, node] : nodes) {
         nodes_v.emplace_back(&node);
@@ -112,19 +113,18 @@ void Graph::rank()
         stop = true;
 
         for (Node *node : nodes_v) {
+            if (abs(node->rank - node->rank_prev) < DELTA) continue;
 
-            if (abs(node->rank - node->rank_prev) >= DELTA) {
-                stop = false;
+            stop = false;
 
-                float sum = 0;
+            float sum = 0;
 
-                for (const Node *src : node->links_in) {
-                    sum += src->rank / src->nlinks_out;
-                }
-
-                sum *= D;
-                node->rank_new = (1 - D) / nnodes + sum;
+            for (const Node *src : node->links_in) {
+                sum += src->rank / src->nlinks_out;
             }
+
+            sum *= D;
+            node->rank_new = (1 - D) / nnodes + sum;
         }
 
         for (Node *node : nodes_v) {
@@ -153,20 +153,19 @@ void Graph::rank_omp()
         #pragma omp parallel for
         for (uint32_t i = 0; i < nnodes; i++) {
             Node &node = *nodes_v[i];
+            if (abs(node.rank - node.rank_prev) < DELTA) continue;
 
-            if (abs(node.rank - node.rank_prev) >= DELTA) {
-                #pragma omp atomic write
-                stop = false;
+            #pragma omp atomic write
+            stop = false;
 
-                float sum = 0;
+            float sum = 0;
 
-                for (const Node *src : node.links_in) {
-                    sum += src->rank / src->nlinks_out;
-                }
-
-                sum *= D;
-                node.rank_new = (1 - D) / nnodes + sum;
+            for (const Node *src : node.links_in) {
+                sum += src->rank / src->nlinks_out;
             }
+
+            sum *= D;
+            node.rank_new = (1 - D) / nnodes + sum;
         }
 
         #pragma omp parallel for

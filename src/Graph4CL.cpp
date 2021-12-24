@@ -60,21 +60,21 @@ void Graph4CL_rank(Graph4CL *graph)
             int32_t id = graph->ids[i];
             Node4CL *node = &graph->nodes[id];
 
-            if (abs(node->rank - node->rank_prev) >= DELTA) {
-                #pragma omp atomic write
-                stop = false;
+            if (abs(node->rank - node->rank_prev) < DELTA) continue;
 
-                float sum = 0;
+            #pragma omp atomic write
+            stop = false;
 
-                for (uint32_t i = 0; i < node->nlinks_in; i++) {
-                    uint32_t link_id = graph->links[node->link_in_ids + i];
-                    Node4CL *src = &graph->nodes[link_id];
-                    sum += src->rank / src->nlinks_out;
-                }
+            float sum = 0;
 
-                sum *= D;
-                node->rank_new = (1 - D) / graph->nnodes + sum;
+            for (uint32_t i = 0; i < node->nlinks_in; i++) {
+                uint32_t link_id = graph->links[node->link_in_ids + i];
+                Node4CL *src = &graph->nodes[link_id];
+                sum += src->rank / src->nlinks_out;
             }
+
+            sum *= D;
+            node->rank_new = (1 - D) / graph->nnodes + sum;
         }
 
         #pragma omp parallel for
