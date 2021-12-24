@@ -1,6 +1,6 @@
 CPPC= g++
-FLAGS= -O2 -fopenmp -s -mtune=native
-DEBUG_FLAGS= -g
+FLAGS= -std=c++17 -O2 -fopenmp -s -mtune=native
+DEBUG_FLAGS= -std=c++17 -g
 
 
 all: main.o Graph.o Graph4CL.o Timer.o
