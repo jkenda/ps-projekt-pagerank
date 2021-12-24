@@ -1,5 +1,8 @@
 #include <iostream>
 #include <algorithm>
+#include <fstream>
+#include <omp.h>
+#include <iomanip>
 #include "Graph.hpp"
 #include "Graph4CL.hpp"
 #include "Timer.hpp"
@@ -39,30 +42,43 @@ int main(int argc, char **argv)
 
     float sum_seq = 0, sum_omp = 0, sum_ocl = 0;
 
-    {
-        TIMER("zaporedno : ")
-        pages.rank();
-    }
+    double seq_time = omp_get_wtime();
+    pages.rank();
+    seq_time = omp_get_wtime() - seq_time;
+
+    // {
+    //     TIMER("zaporedno : ")
+    //     pages.rank();
+    // }
 
     // seštej range strani
     for (const auto &[id, node] : pages.nodes) {
         sum_seq += node.rank;
     }
 
-    {
-        TIMER("OpenMP    : ")
-        pages.rank_omp();
-    }
+    double omp_time = omp_get_wtime();
+    pages.rank_omp();
+    omp_time = omp_get_wtime() - omp_time;
+
+    // {
+    //     TIMER("OpenMP    : ")
+    //     pages.rank_omp();
+    // }
 
     // seštej range strani
     for (const auto &[id, node] : pages.nodes) {
         sum_omp += node.rank;
     }
 
-    {
-        TIMER("OpenCL    : ")
-        Graph4CL_rank(&pages4cl);
-    }
+    double opencl_time = omp_get_wtime();
+    Graph4CL_rank(&pages4cl);
+    opencl_time = omp_get_wtime() - opencl_time;
+
+    // {
+    //     TIMER("OpenCL    : ")
+    //     Graph4CL_rank(&pages4cl);
+    // }
+
     cout << '\n';
 
     // seštej range strani
@@ -88,4 +104,13 @@ int main(int argc, char **argv)
     for (int i = 0; i < 10; i++) {
         printf("%8d: %.3e\n", ranked[i].id, ranked[i].rank);
     }
+
+    // zapisi case in pohitritve v file "time-results.txt"
+    std::ofstream log("time-results.txt", std::ios_base::app | std::ios_base::out);
+    log << std::left << std::setw(16) << std::setfill(' ') << seq_time << "|";
+    log << std::left << std::setw(16) << std::setfill(' ') << omp_time << "|";
+    log << std::left << std::setw(16) << std::setfill(' ') << (seq_time/omp_time) << "|";
+    log << std::left << std::setw(16) << std::setfill(' ') << "-" << "|";
+    log << std::left << std::setw(16) << std::setfill(' ') << opencl_time << "|";
+    log << std::left << std::setw(16) << std::setfill(' ') << (seq_time/opencl_time) << "|\n";
 }

@@ -146,34 +146,38 @@ void Graph::rank_omp()
     }
 
     bool stop = false;
+    // int chunk_size = 100; 
 
     while (!stop) {
         stop = true;
 
-        #pragma omp parallel for
-        for (uint32_t i = 0; i < nnodes; i++) {
-            Node &node = *nodes_v[i];
-            if (abs(node.rank - node.rank_prev) < DELTA) continue;
+        #pragma omp parallel
+        {
+            #pragma omp for // schedule(dynamic, chunk_size)
+            for (uint32_t i = 0; i < nnodes; i++) {
+                Node &node = *nodes_v[i];
+                if (abs(node.rank - node.rank_prev) < DELTA) continue;
 
-            #pragma omp atomic write
-            stop = false;
+                #pragma omp atomic write
+                stop = false;
 
-            float sum = 0;
+                float sum = 0;
 
-            for (const Node *src : node.links_in) {
-                sum += src->rank / src->nlinks_out;
+                for (const Node *src : node.links_in) {
+                    sum += src->rank / src->nlinks_out;
+                }
+
+                sum *= D;
+                node.rank_new = (1 - D) / nnodes + sum;
             }
 
-            sum *= D;
-            node.rank_new = (1 - D) / nnodes + sum;
-        }
+            #pragma omp for // schedule(dynamic, chunk_size)
+            for (uint32_t i = 0; i < nnodes; i++) {
+                Node &node = *nodes_v[i];
 
-        #pragma omp parallel for
-        for (uint32_t i = 0; i < nnodes; i++) {
-            Node &node = *nodes_v[i];
-
-            node.rank_prev = node.rank;
-            node.rank      = node.rank_new;
+                node.rank_prev = node.rank;
+                node.rank      = node.rank_new;
+            }
         }
     }
 
