@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include "Graph.hpp"
+#include "Graph4CL.hpp"
 #include "Timer.hpp"
 
 using std::cout; using std::endl;
@@ -12,12 +13,13 @@ bool comp(const Node &a, const Node &b)
 
 int main(int argc, char **argv)
 {
-    cout << "reading file ...\r"; std::flush(cout);
+    cout << "berem ...\r"; std::flush(cout);
     Graph pages("web-Google.txt");
-    cout << "file read.      " << std::endl;
+    cout << "datoteka prebrana." << '\n';
 
     cout << "Število strani : " << pages.nnodes << '\n';
     cout << "Število povezav: " << pages.nedges << '\n';
+    cout << "Največji id    : " << pages.max_id << std::endl;
 
     {
         TIMER("sequential")
@@ -38,6 +40,20 @@ int main(int argc, char **argv)
     for (int i = 0; i < 10; i++) {
         cout << i << ": " << pages.nodes[i].rank << '\n';
     }
+
+    Graph4CL pages4cl(pages);
+
+    {
+        TIMER("OpenCL")
+        Graph4CL_rank(&pages4cl);
+    }
+
+    cout << '\n';
+
+    for (int i = 0; i < 10; i++) {
+        cout << i << ": " << pages4cl.nodes[i].rank << '\n';
+    }
+
 
     /*
     std::vector<Node> ranked;

@@ -14,6 +14,5 @@ class Timer
     void stop();
 };
 
-#define RESET_TIMER Timer::reset();
 #define TIMER(name) Timer timer##__LINE__(name);
 #define AUTO_TIMER  Timer timer##__LINE__(__FUNCTION__);

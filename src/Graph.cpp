@@ -1,22 +1,22 @@
-#include <iostream>
-
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <tuple>
+#include <cstdint>
 #include "Graph.hpp"
 
 #define DELTA (1e-8)
+#define D (0.85f)
 
 using namespace std;
 
 Node::Node()
-: id(0), rank(0), nlinks_out(0)
+: id(-1), rank(0)
 {
 }
+
 Node::Node(const uint32_t id)
-: id(id), rank(0), nlinks_out(0)
+: id(id), nlinks_out(0)
 {
 }
 
@@ -63,6 +63,7 @@ Graph::Graph(const char *filename)
     words.str(line);
 
     nodes.reserve(nnodes);
+    nodes_v.reserve(nnodes);
 
     uint32_t a, b;
     words >> a; words >> b;
@@ -76,9 +77,8 @@ Graph::Graph(const char *filename)
     node_b.add_link_in(node_a);
     node_a.add_link_out();
 
-    // največji id, največje število povezav do nekega vozlišča
+    // največji id
     max_id = max(a, b);
-    max_links = node_b.links_in.size();
 
     while (is >> a, is >> b) {
         // dodaj vozlišči, če še ne obstajata
@@ -90,28 +90,57 @@ Graph::Graph(const char *filename)
         node_b.add_link_in(node_a);
         node_a.add_link_out();
 
-        // največji id, največje število povezav do nekega vozlišča
+        // največji id
         max_id = max(max_id, max(a, b));
-        max_links = max(max_links, node_b.links_in.size());
     }
-}
 
-bool Graph::has_connection(const uint32_t a, const uint32_t b) const
-{
-    auto node = nodes.find(b);
-    if (node == nodes.end()) return false;
-
-    for (const Node *n : node->second.links_in) {
-        if (n->id == a) return true;
+    for (auto &[id, node] : nodes) {
+        nodes_v.emplace_back(&node);
     }
-    return false;
 }
 
 void Graph::rank()
 {
-    const float d = 0.85f;
+    for (Node *node : nodes_v) {
+        node->rank = 1.0f / nnodes;
+        node->rank_prev = 0;
+    }
 
-    for (auto &[id, node] : nodes) {
+    bool stop = false;
+
+    while (!stop) {
+        stop = true;
+
+        for (Node *node : nodes_v) {
+
+            if (abs(node->rank - node->rank_prev) >= DELTA) {
+                stop = false;
+
+                float sum = 0;
+
+                for (const Node *src : node->links_in) {
+                    sum += src->rank / src->nlinks_out;
+                }
+
+                sum *= D;
+                node->rank_new = (1 - D) / nnodes + sum;
+            }
+        }
+
+        for (Node *node : nodes_v) {
+            node->rank_prev = node->rank;
+            node->rank      = node->rank_new;
+        }
+    }
+
+}
+
+void Graph::rank_omp()
+{
+    #pragma omp parallel for
+    for (uint32_t i = 0; i < nnodes; i++) {
+        Node &node = *nodes_v[i];
+
         node.rank = 1.0f / nnodes;
         node.rank_prev = 0;
     }
@@ -121,9 +150,12 @@ void Graph::rank()
     while (!stop) {
         stop = true;
 
-        for (auto &[id, node] : nodes) {
+        #pragma omp parallel for
+        for (uint32_t i = 0; i < nnodes; i++) {
+            Node &node = *nodes_v[i];
 
             if (abs(node.rank - node.rank_prev) >= DELTA) {
+                #pragma omp atomic write
                 stop = false;
 
                 float sum = 0;
@@ -132,64 +164,17 @@ void Graph::rank()
                     sum += src->rank / src->nlinks_out;
                 }
 
-                sum *= d;
-                node.rank_now = (1 - d) / nnodes + sum;
-            }
-        }
-
-        for (auto &[id, node] : nodes) {
-            node.rank_prev = node.rank;
-            node.rank      = node.rank_now;
-        }
-    }
-
-}
-
-void Graph::rank_omp()
-{
-    const float d = 0.85f;
-
-    for (auto &[id, node] : nodes) {
-        node.rank = 1.0f / nnodes;
-        node.rank_prev = 0;
-    }
-
-    bool stop = false;
-
-    while (!stop) {
-        stop = true;
-
-        #pragma omp parallel for
-        for (size_t id = 0; id <= max_id; id++) {
-            const auto &it = nodes.find(id);
-            if (it == nodes.end()) continue;
-            Node &node = it->second;
-
-            if (abs(node.rank - node.rank_prev) >= DELTA) {
-                if (stop) {
-                    #pragma omp atomic write
-                    stop = false;
-                }
-
-                float sum = 0;
-
-                for (const Node *src : node.links_in) {
-                    sum += src->rank / src->nlinks_out;
-                }
-
-                sum *= d;
-                node.rank_now = (1 - d) / nnodes + sum;
+                sum *= D;
+                node.rank_new = (1 - D) / nnodes + sum;
             }
         }
 
         #pragma omp parallel for
-        for (size_t id = 0; id <= max_id; id++) {
-            const auto &it = nodes.find(id);
-            if (it == nodes.end()) continue;
-            Node &node = it->second;
+        for (uint32_t i = 0; i < nnodes; i++) {
+            Node &node = *nodes_v[i];
 
             node.rank_prev = node.rank;
-            node.rank      = node.rank_now;
+            node.rank      = node.rank_new;
         }
     }
 
