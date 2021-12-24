@@ -20,13 +20,17 @@ int main(int argc, char **argv)
 
     const char *filename = argv[1];
 
-    cout << "berem ...\r"; flush(cout);
-    Graph pages(filename);
-    cout << "datoteka prebrana.\n";
+    Graph pages;
 
-    cout << "gradim strukturo za OpenCL ...\r"; flush(cout);
+    cout << "berem ... "; flush(cout);
+    {
+        TIMER("")
+        pages.read(filename);
+    }
+
+    cout << "gradim strukturo za OpenCL... "; flush(cout);
     Graph4CL pages4cl(pages);
-    cout << "zgrajeno.                     \n";
+    cout << "zgrajeno.\n\n";
 
     cout << "Število strani  : " << pages.nnodes << '\n';
     cout << "Število povezav : " << pages.nedges << '\n';
@@ -36,7 +40,7 @@ int main(int argc, char **argv)
     float sum_seq = 0, sum_omp = 0, sum_ocl = 0;
 
     {
-        TIMER("sequential ")
+        TIMER("zaporedno : ")
         pages.rank();
     }
 
@@ -46,7 +50,7 @@ int main(int argc, char **argv)
     }
 
     {
-        TIMER("OpenMP     ")
+        TIMER("OpenMP    : ")
         pages.rank_omp();
     }
 
@@ -56,7 +60,7 @@ int main(int argc, char **argv)
     }
 
     {
-        TIMER("OpenCL     ")
+        TIMER("OpenCL    : ")
         Graph4CL_rank(&pages4cl);
     }
     cout << '\n';
@@ -78,6 +82,8 @@ int main(int argc, char **argv)
         ranked.emplace_back(node);
     }
     std::sort(ranked.begin(), ranked.end(), comp);
+
+    cout << "strani z največjim rangom:\n";
 
     for (int i = 0; i < 10; i++) {
         printf("%8d: %.3e\n", ranked[i].id, ranked[i].rank);

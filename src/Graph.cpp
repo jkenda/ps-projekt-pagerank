@@ -31,7 +31,7 @@ void Node::add_link_out()
 }
 
 
-Graph::Graph(const char *filename)
+void Graph::read(const char *filename)
 {
     ifstream is(filename, ios::in);
     if (!is.is_open()) {

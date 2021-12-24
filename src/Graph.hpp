@@ -24,8 +24,7 @@ struct Graph
     std::uint32_t nnodes, nedges;                  // št. strani, povezav
     std::uint32_t max_id;                          // največji id strani
 
-    Graph(const char *filename);
-    bool has_connection(const std::uint32_t a, const std::uint32_t b) const;
+    void read(const char *filename);
 
     void rank();
     void rank_omp();
