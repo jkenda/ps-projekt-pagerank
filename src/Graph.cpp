@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <iostream>
 #include "Graph.hpp"
 
 #define DELTA (1e-8)
@@ -94,10 +95,20 @@ void Graph::read(const char *filename)
 
     nnodes = nodes.size();
     nodes_v.reserve(nnodes);
+    sink_nodes.reserve(nnodes);
+
+    nsinks = 0;
 
     for (auto &[id, node] : nodes) {
         nodes_v.emplace_back(&node);
+
+        if (nodes_v.back()->nlinks_out == 0) {
+            sink_nodes.emplace_back(&node);
+            nsinks++;
+        }
     }
+
+    cout << "n of sinks: " << nsinks << endl;
 }
 
 void Graph::rank()
@@ -108,9 +119,19 @@ void Graph::rank()
     }
 
     bool stop = false;
+    // vsota rankov vseh sink node-ov
+    // sink node = node oz. stran, ki nima izhodnih povezav 
+    float sink_sum = 0; 
+    int it = 0;
 
     while (!stop) {
         stop = true;
+        sink_sum = 0;
+        it++;
+
+        for (Node *sink_node : sink_nodes) {
+            sink_sum += sink_node->rank;
+        }
 
         for (Node *node : nodes_v) {
             if (abs(node->rank - node->rank_prev) < DELTA) continue;
@@ -124,7 +145,7 @@ void Graph::rank()
             }
 
             sum *= D;
-            node->rank_new = (1 - D) / nnodes + sum;
+            node->rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
         }
 
         for (Node *node : nodes_v) {
@@ -132,6 +153,8 @@ void Graph::rank()
             node->rank      = node->rank_new;
         }
     }
+
+    cout << "number of iterations: " << it << endl;
 
 }
 
@@ -146,14 +169,28 @@ void Graph::rank_omp()
     }
 
     bool stop = false;
-    // int chunk_size = 100; 
+    int chunk_size = 100;
+    float sink_sum = 0; 
+    int it = 0;
 
     while (!stop) {
         stop = true;
+        sink_sum = 0;
+        it++;
+
+        for (Node *sink_node : sink_nodes) {
+            sink_sum += sink_node->rank;
+        }
 
         #pragma omp parallel
-        {
-            #pragma omp for // schedule(dynamic, chunk_size)
+        {   
+            // https://stackoverflow.com/questions/4749493/strange-float-behaviour-in-openmp
+            // #pragma omp reduction(+: sink_sum) schedule(dynamic, chunk_size)
+            // for (Node *sink_node : sink_nodes) {
+            //     sink_sum += sink_node->rank;
+            // }
+
+            #pragma omp for schedule(dynamic, chunk_size)
             for (uint32_t i = 0; i < nnodes; i++) {
                 Node &node = *nodes_v[i];
                 if (abs(node.rank - node.rank_prev) < DELTA) continue;
@@ -168,10 +205,10 @@ void Graph::rank_omp()
                 }
 
                 sum *= D;
-                node.rank_new = (1 - D) / nnodes + sum;
+                node.rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
             }
 
-            #pragma omp for // schedule(dynamic, chunk_size)
+            #pragma omp for schedule(dynamic, chunk_size)
             for (uint32_t i = 0; i < nnodes; i++) {
                 Node &node = *nodes_v[i];
 
@@ -181,4 +218,5 @@ void Graph::rank_omp()
         }
     }
 
+    cout << "number of iterations: " << it << endl;
 }

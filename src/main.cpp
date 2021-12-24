@@ -25,15 +25,15 @@ int main(int argc, char **argv)
 
     Graph pages;
 
-    cout << "berem ... "; flush(cout);
+    cout << "berem ...\n"; flush(cout);
     {
         TIMER("")
         pages.read(filename);
     }
 
-    cout << "gradim strukturo za OpenCL... "; flush(cout);
-    Graph4CL pages4cl(pages);
-    cout << "zgrajeno.\n\n";
+    // cout << "gradim strukturo za OpenCL... "; flush(cout);
+    // Graph4CL pages4cl(pages);
+    // cout << "zgrajeno.\n\n";
 
     cout << "Število strani  : " << pages.nnodes << '\n';
     cout << "Število povezav : " << pages.nedges << '\n';
@@ -45,6 +45,7 @@ int main(int argc, char **argv)
     double seq_time = omp_get_wtime();
     pages.rank();
     seq_time = omp_get_wtime() - seq_time;
+    cout << "seq time: " << seq_time << " s" << endl;
 
     // {
     //     TIMER("zaporedno : ")
@@ -59,6 +60,7 @@ int main(int argc, char **argv)
     double omp_time = omp_get_wtime();
     pages.rank_omp();
     omp_time = omp_get_wtime() - omp_time;
+    cout << "omp time: " << omp_time << " s" << endl;
 
     // {
     //     TIMER("OpenMP    : ")
@@ -70,9 +72,9 @@ int main(int argc, char **argv)
         sum_omp += node.rank;
     }
 
-    double opencl_time = omp_get_wtime();
-    Graph4CL_rank(&pages4cl);
-    opencl_time = omp_get_wtime() - opencl_time;
+    // double opencl_time = omp_get_wtime();
+    // Graph4CL_rank(&pages4cl);
+    // opencl_time = omp_get_wtime() - opencl_time;
 
     // {
     //     TIMER("OpenCL    : ")
@@ -82,12 +84,12 @@ int main(int argc, char **argv)
     cout << '\n';
 
     // seštej range strani
-    for (int i = 0; i < pages4cl.nnodes; i++) {
-        int32_t id = pages4cl.ids[i];
-        Node4CL &node = pages4cl.nodes[id];
+    // for (int i = 0; i < pages4cl.nnodes; i++) {
+    //     int32_t id = pages4cl.ids[i];
+    //     Node4CL &node = pages4cl.nodes[id];
         
-        sum_ocl += node.rank;
-    }
+    //     sum_ocl += node.rank;
+    // }
 
     // rangi se morajo sešteti v 1
     cout << "seštevki rangov: " << sum_seq << ", " << sum_omp << ", " << sum_ocl << '\n';
@@ -106,11 +108,11 @@ int main(int argc, char **argv)
     }
 
     // zapisi case in pohitritve v file "time-results.txt"
-    std::ofstream log("time-results.txt", std::ios_base::app | std::ios_base::out);
-    log << std::left << std::setw(16) << std::setfill(' ') << seq_time << "|";
-    log << std::left << std::setw(16) << std::setfill(' ') << omp_time << "|";
-    log << std::left << std::setw(16) << std::setfill(' ') << (seq_time/omp_time) << "|";
-    log << std::left << std::setw(16) << std::setfill(' ') << "-" << "|";
-    log << std::left << std::setw(16) << std::setfill(' ') << opencl_time << "|";
-    log << std::left << std::setw(16) << std::setfill(' ') << (seq_time/opencl_time) << "|\n";
+    // std::ofstream log("time-results.txt", std::ios_base::app | std::ios_base::out);
+    // log << std::left << std::setw(16) << std::setfill(' ') << seq_time << "|";
+    // log << std::left << std::setw(16) << std::setfill(' ') << omp_time << "|";
+    // log << std::left << std::setw(16) << std::setfill(' ') << (seq_time/omp_time) << "|";
+    // log << std::left << std::setw(16) << std::setfill(' ') << "-" << "|"; // schedule npr. (dynamic, 10)
+    // log << std::left << std::setw(16) << std::setfill(' ') << opencl_time << "|";
+    // log << std::left << std::setw(16) << std::setfill(' ') << (seq_time/opencl_time) << "|\n";
 }

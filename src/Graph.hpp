@@ -21,7 +21,8 @@ struct Graph
 {
     std::unordered_map<std::uint32_t, Node> nodes; // strani
     std::vector<Node *> nodes_v;                   // kazalci do veljavnih strani
-    std::uint32_t nnodes, nedges;                  // št. strani, povezav
+    std::vector<Node *> sink_nodes;                // kazalci do veljavnih strani
+    std::uint32_t nnodes, nedges, nsinks;                  // št. strani, povezav
     std::uint32_t max_id;                          // največji id strani
 
     void read(const char *filename);
