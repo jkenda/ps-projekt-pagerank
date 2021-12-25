@@ -3,18 +3,14 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <iostream>
 #include "Graph.hpp"
 
-#define DELTA (1e-8)
+#define CHUNK_SIZE 100
+
+#define DELTA (1e-16f)
 #define D (0.85f)
 
 using namespace std;
-
-Node::Node()
-: id(-1), rank(0)
-{
-}
 
 Node::Node(const uint32_t id)
 : id(id), nlinks_out(0)
@@ -93,6 +89,7 @@ void Graph::read(const char *filename)
         max_id = max(max_id, max(a, b));
     }
 
+    // rezerviraj prostor v vektorjih
     nnodes = nodes.size();
     nodes_v.reserve(nnodes);
     sink_nodes.reserve(nnodes);
@@ -102,16 +99,17 @@ void Graph::read(const char *filename)
     for (auto &[id, node] : nodes) {
         nodes_v.emplace_back(&node);
 
-        if (nodes_v.back()->nlinks_out == 0) {
+        if (node.nlinks_out == 0) {
             sink_nodes.emplace_back(&node);
             nsinks++;
         }
     }
 
-    cout << "n of sinks: " << nsinks << endl;
+    // zmanjšaj vektor na pravo velikost
+    sink_nodes.shrink_to_fit();
 }
 
-void Graph::rank()
+uint32_t Graph::rank()
 {
     for (Node *node : nodes_v) {
         node->rank = 1.0f / nnodes;
@@ -119,15 +117,16 @@ void Graph::rank()
     }
 
     bool stop = false;
-    // vsota rankov vseh sink node-ov
-    // sink node = node oz. stran, ki nima izhodnih povezav 
-    float sink_sum = 0; 
-    int it = 0;
+    // vsota rankov vseh ponorov
+    // ponor = node oz. stran, ki nima izhodnih povezav 
+    rank_t sink_sum = 0;
+
+    uint32_t iterations = 0;
 
     while (!stop) {
         stop = true;
         sink_sum = 0;
-        it++;
+        iterations++;
 
         for (Node *sink_node : sink_nodes) {
             sink_sum += sink_node->rank;
@@ -138,7 +137,7 @@ void Graph::rank()
 
             stop = false;
 
-            float sum = 0;
+            rank_t sum = 0;
 
             for (const Node *src : node->links_in) {
                 sum += src->rank / src->nlinks_out;
@@ -154,11 +153,10 @@ void Graph::rank()
         }
     }
 
-    cout << "number of iterations: " << it << endl;
-
+    return iterations;
 }
 
-void Graph::rank_omp()
+uint32_t Graph::rank_omp()
 {
     #pragma omp parallel for
     for (uint32_t i = 0; i < nnodes; i++) {
@@ -169,28 +167,27 @@ void Graph::rank_omp()
     }
 
     bool stop = false;
-    int chunk_size = 100;
-    float sink_sum = 0; 
-    int it = 0;
+    rank_t sink_sum = 0;
+    uint32_t iterations = 0;
 
     while (!stop) {
         stop = true;
         sink_sum = 0;
-        it++;
+        iterations++;
 
         for (Node *sink_node : sink_nodes) {
             sink_sum += sink_node->rank;
         }
 
         #pragma omp parallel
-        {   
-            // https://stackoverflow.com/questions/4749493/strange-float-behaviour-in-openmp
-            // #pragma omp reduction(+: sink_sum) schedule(dynamic, chunk_size)
+        {
+            // https://stackoverflow.com/questions/4749493/strange-double-behaviour-in-openmp
+            // #pragma omp reduction(+: sink_sum) schedule(dynamic, CHUNK_SIZE)
             // for (Node *sink_node : sink_nodes) {
             //     sink_sum += sink_node->rank;
             // }
 
-            #pragma omp for schedule(dynamic, chunk_size)
+            #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
                 Node &node = *nodes_v[i];
                 if (abs(node.rank - node.rank_prev) < DELTA) continue;
@@ -198,7 +195,7 @@ void Graph::rank_omp()
                 #pragma omp atomic write
                 stop = false;
 
-                float sum = 0;
+                rank_t sum = 0;
 
                 for (const Node *src : node.links_in) {
                     sum += src->rank / src->nlinks_out;
@@ -208,7 +205,7 @@ void Graph::rank_omp()
                 node.rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
             }
 
-            #pragma omp for schedule(dynamic, chunk_size)
+            #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
                 Node &node = *nodes_v[i];
 
@@ -218,5 +215,5 @@ void Graph::rank_omp()
         }
     }
 
-    cout << "number of iterations: " << it << endl;
+    return iterations;
 }
