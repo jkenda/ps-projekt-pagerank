@@ -102,11 +102,13 @@ void Graph::read(const char *filename)
     for (auto &[id, node] : nodes) {
         nodes_v.emplace_back(&node);
 
-        if (nodes_v.back()->nlinks_out == 0) {
+        if (node.nlinks_out == 0) {
             sink_nodes.emplace_back(&node);
             nsinks++;
         }
     }
+
+    cout << sink_nodes.size() << endl;
 
     cout << "n of sinks: " << nsinks << endl;
 }
