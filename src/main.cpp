@@ -126,13 +126,13 @@ int main(int argc, char **argv)
     // rangi se morajo sešteti v 1
     printf("SEŠTEVKI RANGOV\n");
     printf("\tRang strani je verjetnost - vsota verjetnosti mora biti 1.\n");
-    printf("\t┌───────────┬──────────────┐\n");
-    printf("\t│ %-9s │ %-12s │\n", "nacin", "sestevek");
-    printf("\t├───────────┼──────────────┤\n");
-    printf("\t│ %-9s │ %12.10lf │\n", "zaporedno", sum_seq);
-    printf("\t│ %-9s │ %12.10lf │\n", "OpenMP", sum_omp);
-    printf("\t│ %-9s │ %12.10lf │\n", "OpenCL", sum_ocl);
-    printf("\t└───────────┴──────────────┘\n");
+    printf("\t┌───────────┬─────────────────┐\n");
+    printf("\t│ %-9s │ %-15s │\n", "nacin", "sestevek");
+    printf("\t├───────────┼─────────────────┤\n");
+    printf("\t│ %-9s │ %15.13lf │\n", "zaporedno", sum_seq);
+    printf("\t│ %-9s │ %15.13lf │\n", "OpenMP", sum_omp);
+    printf("\t│ %-9s │ %15.13lf │\n", "OpenCL", sum_ocl);
+    printf("\t└───────────┴─────────────────┘\n");
     printf("\n");
 
     int32_t ndisplay = min(ranked_seq.size(), 10UL);
