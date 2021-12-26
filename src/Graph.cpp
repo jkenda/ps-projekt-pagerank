@@ -5,7 +5,7 @@
 #include <cstdint>
 #include "Graph.hpp"
 
-#define CHUNK_SIZE 100
+#define CHUNK_SIZE 128
 
 #define DELTA (1e-16f)
 #define D (0.85f)
@@ -158,34 +158,33 @@ uint32_t Graph::rank()
 
 uint32_t Graph::rank_omp()
 {
-    #pragma omp parallel for
-    for (uint32_t i = 0; i < nnodes; i++) {
-        Node &node = *nodes_v[i];
-
-        node.rank = 1.0f / nnodes;
-        node.rank_prev = 0;
-    }
-
     bool stop = false;
     rank_t sink_sum = 0;
     uint32_t iterations = 0;
 
-    while (!stop) {
-        stop = true;
-        sink_sum = 0;
-        iterations++;
+    #pragma omp parallel
+    {
+        #pragma omp for
+        for (uint32_t i = 0; i < nnodes; i++) {
+            Node &node = *nodes_v[i];
 
-        for (Node *sink_node : sink_nodes) {
-            sink_sum += sink_node->rank;
+            node.rank = 1.0f / nnodes;
+            node.rank_prev = 0;
         }
 
-        #pragma omp parallel
-        {
-            // https://stackoverflow.com/questions/4749493/strange-double-behaviour-in-openmp
-            // #pragma omp reduction(+: sink_sum) schedule(dynamic, CHUNK_SIZE)
-            // for (Node *sink_node : sink_nodes) {
-            //     sink_sum += sink_node->rank;
-            // }
+        while (!stop) {
+            #pragma omp barrier
+            #pragma omp single
+            {
+                stop = true;
+                sink_sum = 0;
+                iterations++;
+            }
+
+            #pragma omp for reduction(+: sink_sum) schedule(dynamic, CHUNK_SIZE)
+            for (Node *sink_node : sink_nodes) {
+                sink_sum  = sink_sum + sink_node->rank;
+            }
 
             #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
