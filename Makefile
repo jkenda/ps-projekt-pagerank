@@ -7,8 +7,11 @@ all: main.o Graph.o Graph4CL.o Timer.o
 	mkdir -p bin
 	$(CPPC) $(FLAGS) -o bin/main main.o Graph.o Graph4CL.o Timer.o
 
-run:	
-	srun --reservation=fri --cpus-per-task=64 bin/main web-Google/web-Google.txt
+run:
+	bin/main web-Google/web-Google.txt | tee output
+
+run_slurm:	
+	srun --reservation=fri --cpus-per-task=64 bin/main web-Google/web-Google.txt | tee output
 
 main.o: src/main.cpp
 	$(CPPC) $(FLAGS) -c -o main.o src/main.cpp
