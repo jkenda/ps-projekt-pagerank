@@ -143,8 +143,8 @@ int main(int argc, char **argv)
     printf("\t├──────────┼───────────┤    ├──────────┼───────────┤    ├──────────┼───────────┤\n");
     for (uint32_t i = 0; i < ndisplay; i++) {
         printf("\t│ %8d │ %8.3e │    ", ranked_seq[i].id, ranked_seq[i].rank);
-        printf("│ %8d │ %8.3e │    ", ranked_omp[i].id, ranked_omp[i].rank);
-        printf("│ %8d │ %8.3e │\n"  , ranked_ocl[i].id, ranked_ocl[i].rank);
+        printf(  "│ %8d │ %8.3e │    ", ranked_omp[i].id, ranked_omp[i].rank);
+        printf(  "│ %8d │ %8.3e │\n"  , ranked_ocl[i].id, ranked_ocl[i].rank);
     }
     printf("\t└──────────┴───────────┘    └──────────┴───────────┘    └──────────┴───────────┘\n");
     printf("\t[zaporedno]                 [OpenMP]                    [OpenCL]\n");
@@ -156,8 +156,8 @@ int main(int argc, char **argv)
     printf("\t├──────────┼───────────┤    ├──────────┼───────────┤    ├──────────┼───────────┤\n");
     for (uint32_t i = pages.nnodes; i > pages.nnodes-ndisplay; i--) {
         printf("\t│ %8d │ %8.3e │    ", ranked_seq[i-1].id, ranked_seq[i-1].rank);
-        printf("│ %8d │ %8.3e │    ", ranked_omp[i-1].id, ranked_omp[i-1].rank);
-        printf("│ %8d │ %8.3e │\n"  , ranked_ocl[i-1].id, ranked_ocl[i-1].rank);
+        printf(  "│ %8d │ %8.3e │    ", ranked_omp[i-1].id, ranked_omp[i-1].rank);
+        printf(  "│ %8d │ %8.3e │\n"  , ranked_ocl[i-1].id, ranked_ocl[i-1].rank);
     }
     printf("\t└──────────┴───────────┘    └──────────┴───────────┘    └──────────┴───────────┘\n");
     printf("\t[zaporedno]                 [OpenMP]                    [OpenCL]\n");

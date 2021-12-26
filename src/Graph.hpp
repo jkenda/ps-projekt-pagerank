@@ -4,6 +4,11 @@
 #include <unordered_map>
 #include <vector>
 
+#define CHUNK_SIZE 128
+
+#define DELTA 2e-19L
+#define D 0.85L
+
 typedef double rank_t;
 typedef std::uint32_t id_t;
 
