@@ -7,10 +7,6 @@
 
 using namespace std;
 
-Node4CL::Node4CL()
-{
-}
-
 Node4CL::Node4CL(id_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset)
 : id(id), nlinks_in(nlinks_in), nlinks_out(nlinks_out), links_offset(links_offset)
 {
@@ -19,7 +15,7 @@ Node4CL::Node4CL(id_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t link
 Graph4CL::Graph4CL(const Graph& graph)
 : nnodes(graph.nnodes), nedges(graph.nedges), max_id(graph.max_id), nsinks(graph.nsinks)
 {
-    offsets_v.resize(max_id + 1);
+    offsets_v.reserve(max_id + 1);
 
     nodes_v.reserve(nnodes);
     link_ids_v.reserve(nedges);

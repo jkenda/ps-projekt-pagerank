@@ -11,7 +11,6 @@ struct Node4CL
     uint32_t nlinks_in;               // št. vhodnih povezav
     uint32_t links_offset;            // odmik v tabeli links
 
-    Node4CL();
     Node4CL(id_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset);
 };
 
