@@ -5,14 +5,14 @@
 
 struct Node4CL
 {
-    uint32_t id;
+    id_t id;
     rank_t rank, rank_new, rank_prev; // rangiranje
     uint32_t nlinks_out;              // št. izhodnih povezav
     uint32_t nlinks_in;               // št. vhodnih povezav
     uint32_t links_offset;            // odmik v tabeli links
 
     Node4CL();
-    Node4CL(uint32_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset);
+    Node4CL(id_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset);
 };
 
 struct Graph4CL
@@ -25,7 +25,7 @@ struct Graph4CL
 
     uint32_t nnodes, nedges; // št. strani, povezav
     uint32_t nsinks;         // št. ponorov
-    int32_t  max_id;         // največji id strani
+    id_t  max_id;         // največji id strani
 
     std::vector<Node4CL> nodes_v;
     std::vector<int32_t> offsets_v;
@@ -42,7 +42,7 @@ definicija struktur v OpenCL:
 
 typedef struct 
 {
-    uint32_t id;
+    id_t id;
     rank_t rank, rank_new, rank_prev;
     uint32_t nlinks_out;
     uint32_t nlinks_in;
@@ -56,7 +56,7 @@ typedef struct
     uint32_t *links;
 
     uint32_t nnodes, nedges;
-    uint32_t max_id;
+    id_t max_id;
 }
 Graph4CL;
 

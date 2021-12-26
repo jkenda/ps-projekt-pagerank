@@ -5,15 +5,16 @@
 #include <vector>
 
 typedef double rank_t;
+typedef std::uint32_t id_t;
 
 struct Node
 {
-    std::int32_t id;                     // id (številka strani)
+    id_t id;                     // id (številka strani)
     rank_t rank, rank_new, rank_prev;     // rangiranje
     std::vector<const Node *> links_in;  // povezave do strani
     std::uint32_t nlinks_out;            // povezave iz strani
 
-    Node(const std::uint32_t id);
+    Node(const id_t id);
 
     void add_link_in(const Node& link);
     void add_link_out();
@@ -25,7 +26,7 @@ struct Graph
     std::vector<Node *> nodes_v;                   // kazalci do veljavnih strani
     std::vector<Node *> sink_nodes;                // kazalci do ponornih strani (strani brez izhodnih povezav)
     std::uint32_t nnodes, nedges, nsinks;          // št. strani, povezav
-    std::uint32_t max_id;                          // največji id strani
+    id_t max_id;                          // največji id strani
 
     void read(const char *filename);
 

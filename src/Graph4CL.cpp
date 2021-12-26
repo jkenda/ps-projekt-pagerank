@@ -2,8 +2,8 @@
 #include <cstdio>
 #include <cmath>
 
-#define DELTA (1e-16f)
-#define D (0.85f)
+#define DELTA (2e-19L)
+#define D (0.85L)
 
 using namespace std;
 
@@ -11,7 +11,7 @@ Node4CL::Node4CL()
 {
 }
 
-Node4CL::Node4CL(uint32_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset)
+Node4CL::Node4CL(id_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset)
 : id(id), nlinks_in(nlinks_in), nlinks_out(nlinks_out), links_offset(links_offset)
 {
 }

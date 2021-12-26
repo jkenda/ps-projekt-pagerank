@@ -7,12 +7,12 @@
 
 #define CHUNK_SIZE 128
 
-#define DELTA (1e-16f)
-#define D (0.85f)
+#define DELTA (2e-19L)
+#define D (0.85L)
 
 using namespace std;
 
-Node::Node(const uint32_t id)
+Node::Node(const id_t id)
 : id(id), nlinks_out(0)
 {
 }
