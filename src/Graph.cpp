@@ -182,8 +182,8 @@ uint32_t Graph::rank_omp()
             }
 
             #pragma omp for reduction(+: sink_sum) schedule(dynamic, CHUNK_SIZE)
-            for (Node *sink_node : sink_nodes) {
-                sink_sum  = sink_sum + sink_node->rank;
+            for (uint32_t i = 0; i < sink_nodes.size(); i++) {
+                sink_sum  = sink_sum + sink_nodes[i]->rank;
             }
 
             #pragma omp for schedule(dynamic, CHUNK_SIZE)
