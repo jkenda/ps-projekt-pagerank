@@ -5,6 +5,7 @@
 
 struct Node4CL
 {
+    uint32_t id;
     rank_t rank, rank_new, rank_prev; // rangiranje
     uint32_t nlinks_out;              // št. izhodnih povezav
     uint32_t nlinks_in;               // št. vhodnih povezav
