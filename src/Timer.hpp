@@ -5,11 +5,11 @@
 class Timer
 {
     private:
-    const char *_name;
+    float &_time_dst;
     std::chrono::time_point<std::chrono::high_resolution_clock> _start_time;
 
     public:
-    Timer(const char *name);
+    Timer(float &time_dst);
     ~Timer();
     void stop();
 };

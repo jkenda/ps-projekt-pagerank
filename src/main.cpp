@@ -1,8 +1,6 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
-#include <omp.h>
-#include <iomanip>
 #include "Graph.hpp"
 #include "Graph4CL.hpp"
 #include "Timer.hpp"
@@ -25,11 +23,13 @@ int main(int argc, char **argv)
     Graph pages;
 
     // preberi strukturo iz datoteke
+    float time_read;
     cout << "berem ... "; flush(cout);
     {
-        TIMER("")
+        TIMER(time_read)
         pages.read(filename);
     }
+    cout << time_read << " s\n";
 
     // sestavi graph za OpenCL iz obstoječega graph-a
     cout << "gradim strukturo za OpenCL... "; flush(cout);
@@ -54,9 +54,10 @@ int main(int argc, char **argv)
     printf("│ %-9s │ %-9s │ %-9s │\n", "nacin", "cas [s]", "iteracije");
     printf("├───────────┼───────────┼───────────┤\n");
     
-    time_seq = omp_get_wtime();
-    iter_seq = pages.rank();
-    time_seq = omp_get_wtime() - time_seq;
+    {
+        TIMER(time_seq)
+        iter_seq = pages.rank();
+    }
     printf("│ %-9s │ % 9.5f │ %9d │\n", "zaporedno", time_seq, iter_seq);
 
     // seštej range strani
@@ -73,9 +74,10 @@ int main(int argc, char **argv)
 
     // OpenMP
 
-    time_omp = omp_get_wtime();
-    iter_omp = pages.rank_omp();
-    time_omp = omp_get_wtime() - time_omp;
+    {
+        TIMER(time_omp)
+        iter_omp = pages.rank_omp();
+    }
     printf("│ %-9s │ % 9.5f │ %9d │\n", "OpenMP", time_omp, iter_omp);
 
     // seštej range strani
@@ -92,9 +94,10 @@ int main(int argc, char **argv)
 
     // OpenCL
 
-    time_ocl = omp_get_wtime();
-    iter_ocl = Graph4CL_rank(&pages4cl);
-    time_ocl = omp_get_wtime() - time_ocl;
+    {
+        TIMER(time_ocl)
+        iter_ocl = Graph4CL_rank(&pages4cl);
+    }
     printf("│ %-9s │ % 9.5f │ %9d │\n", "OpenCL", time_ocl, iter_ocl);
     printf("└───────────┴───────────┴───────────┘\n");
     printf("\n");
@@ -125,11 +128,13 @@ int main(int argc, char **argv)
     printf("(rang strani je verjetnost - seštevek vseh verjetnosti mora biti 1)\n");
     printf("\n");
 
+    int32_t ndisplay = min(ranked_seq.size(), 10UL);
+
     printf("10 strani z največjim rangom:\n");
     printf("┌──────────┬───────────┐    ┌──────────┬───────────┐    ┌──────────┬───────────┐\n");
     printf("│ %-8s │ %-9s │    │ %-8s │ %-9s │    │ %-8s │ %-9s │\n", "id", "rank", "id", "rank", "id", "rank");
     printf("├──────────┼───────────┤    ├──────────┼───────────┤    ├──────────┼───────────┤\n");
-    for (uint32_t i = 0; i < 10; i++) {
+    for (uint32_t i = 0; i < ndisplay; i++) {
         printf("│ %8d │ %8.3e │    ", ranked_seq[i].id, ranked_seq[i].rank);
         printf("│ %8d │ %8.3e │    ", ranked_omp[i].id, ranked_omp[i].rank);
         printf("│ %8d │ %8.3e │\n"  , ranked_ocl[i].id, ranked_ocl[i].rank);
@@ -142,10 +147,10 @@ int main(int argc, char **argv)
     printf("┌──────────┬───────────┐    ┌──────────┬───────────┐    ┌──────────┬───────────┐\n");
     printf("│ %-8s │ %-9s │    │ %-8s │ %-9s │    │ %-8s │ %-9s │\n", "id", "rank", "id", "rank", "id", "rank");
     printf("├──────────┼───────────┤    ├──────────┼───────────┤    ├──────────┼───────────┤\n");
-    for (uint32_t i = pages.nnodes-1; i >= pages.nnodes-10; i--) {
-        printf("│ %8d │ %8.3e │    ", ranked_seq[i].id, ranked_seq[i].rank);
-        printf("│ %8d │ %8.3e │    ", ranked_omp[i].id, ranked_omp[i].rank);
-        printf("│ %8d │ %8.3e │\n"  , ranked_ocl[i].id, ranked_ocl[i].rank);
+    for (uint32_t i = pages.nnodes; i > pages.nnodes-ndisplay; i--) {
+        printf("│ %8d │ %8.3e │    ", ranked_seq[i-1].id, ranked_seq[i-1].rank);
+        printf("│ %8d │ %8.3e │    ", ranked_omp[i-1].id, ranked_omp[i-1].rank);
+        printf("│ %8d │ %8.3e │\n"  , ranked_ocl[i-1].id, ranked_ocl[i-1].rank);
     }
     printf("└──────────┴───────────┘    └──────────┴───────────┘    └──────────┴───────────┘\n");
     printf("[zaporedno]                 [OpenMP]                    [OpenCL]\n");
