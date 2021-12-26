@@ -89,8 +89,7 @@ int main(int argc, char **argv)
 
     // seštej range strani
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {
-        int32_t id = pages4cl.ids[i];
-        Node4CL &node = pages4cl.nodes[id]; 
+        Node4CL &node = pages4cl.nodes[i]; 
         sum_ocl += node.rank;
     }
 

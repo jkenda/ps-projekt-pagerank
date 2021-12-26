@@ -5,32 +5,31 @@
 
 struct Node4CL
 {
-    int32_t id;                 // id (številka) strani
     rank_t rank, rank_new, rank_prev; // rangiranje
-    uint32_t nlinks_out;        // št. izhodnih povezav
-    uint32_t nlinks_in;         // št. vhodnih povezav
+    uint32_t nlinks_out;              // št. izhodnih povezav
+    uint32_t nlinks_in;               // št. vhodnih povezav
+    uint32_t links_offset;            // odmik v tabeli links
 
     Node4CL();
-    Node4CL(uint32_t id, size_t nlinks_in, size_t nlinks_out);
+    Node4CL(uint32_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset);
 };
 
 struct Graph4CL
 {
-    Node4CL *nodes;         // strani
-    int32_t *ids;      // id-ji veljavnih strani
-    int32_t *links;    // povezave
-    int32_t *sinks;    // sink-i
-    int32_t *offsets;  // offset-i
+    Node4CL *nodes;   // strani
+    int32_t *offsets; // id-ji veljavnih strani
+
+    int32_t *link_ids;     // povezave
+    int32_t *sink_offsets; // sink-i
 
     uint32_t nnodes, nedges; // št. strani, povezav
     uint32_t nsinks;         // št. ponorov
-    int32_t  max_id;          // največji id strani
+    int32_t  max_id;         // največji id strani
 
     std::vector<Node4CL> nodes_v;
-    std::vector<int32_t> ids_v;
-    std::vector<int32_t> links_v;
-    std::vector<int32_t> sinks_v;
     std::vector<int32_t> offsets_v;
+    std::vector<int32_t> link_ids_v;
+    std::vector<int32_t> sink_offsets_v;
 
     Graph4CL(const Graph& graph);
 };
