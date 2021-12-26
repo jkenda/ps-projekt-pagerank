@@ -161,5 +161,5 @@ int main(int argc, char **argv)
     }
     printf("\t└──────────┴───────────┘    └──────────┴───────────┘    └──────────┴───────────┘\n");
     printf("\t[zaporedno]                 [OpenMP]                    [OpenCL]\n");
-    printf("\n\a");
+    printf("\n");
 }
