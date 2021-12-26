@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
+#include <cstdarg>
 #include "Graph.hpp"
 #include "Graph4CL.hpp"
 #include "Timer.hpp"
@@ -23,8 +24,9 @@ int main(int argc, char **argv)
     Graph pages;
 
     // preberi strukturo iz datoteke
+    printf("\nBRANJE IZ DATOTEKE\n");
     float time_read;
-    cout << "berem ... "; flush(cout);
+    cout << "\tberem ... "; flush(cout);
     {
         TIMER(time_read)
         pages.read(filename);
@@ -32,11 +34,11 @@ int main(int argc, char **argv)
     cout << time_read << " s\n";
 
     // sestavi graph za OpenCL iz obstoječega graph-a
-    cout << "gradim strukturo za OpenCL... "; flush(cout);
+    cout << "\tgradim strukturo za OpenCL... "; flush(cout);
     Graph4CL pages4cl(pages);
-    cout << "zgrajeno.\n\n";
+    cout << "zgrajeno.\n" << endl;
 
-    cout << "\033[1mOSNOVNI PODATKI\033[0m\n";
+    printf("OSNOVNI PODATKI\n");
     // izpiši osnovne informacije o grafu
     cout << "\tŠtevilo strani  : " << pages.nnodes << ",\n";
     cout << "\tštevilo povezav : " << pages.nedges << ",\n";
@@ -50,17 +52,19 @@ int main(int argc, char **argv)
 
     /* RANGIRAJ STRANI */
 
-    printf("\033[1mIZVAJANJE\033[0m\n");
+    printf("IZVAJANJE\n");
     // sekvenčni algoritem
-    printf("\t┌───────────┬───────────┬───────────┐\n");
-    printf("\t│ %-9s │ %-9s │ %-9s │\n", "nacin", "cas [s]", "iteracije");
-    printf("\t├───────────┼───────────┼───────────┤\n");
+    printf("\t┌───────────┬───────────┬───────────┬────────────┐\n");
+    printf("\t│ %-9s │ %-9s │ %-9s │ %-10s │\n", "nacin", "iteracije", "cas [s]", "pohitritev");
+    printf("\t├───────────┼───────────┼───────────┼────────────┤\n");
+    flush(cout);
     
     {
         TIMER(time_seq)
         iter_seq = pages.rank();
     }
-    printf("\t│ %-9s │ % 9.5f │ %9d │\n", "zaporedno", time_seq, iter_seq);
+    printf("\t│ %-9s │ %9u │ %9.5f │ %10.5f │\n", "zaporedno", iter_seq, time_seq, time_seq / time_seq);
+    flush(cout);
 
     // seštej range strani
     for (const auto &[id, node] : pages.nodes) {
@@ -80,7 +84,8 @@ int main(int argc, char **argv)
         TIMER(time_omp)
         iter_omp = pages.rank_omp();
     }
-    printf("\t│ %-9s │ % 9.5f │ %9d │\n", "OpenMP", time_omp, iter_omp);
+    printf("\t│ %-9s │ %9u │ %9.5f │ %10.5f │\n", "OpenMP", iter_omp, time_omp, time_seq / time_omp);
+    flush(cout);
 
     // seštej range strani
     for (const auto &[id, node] : pages.nodes) {
@@ -100,9 +105,9 @@ int main(int argc, char **argv)
         TIMER(time_ocl)
         iter_ocl = Graph4CL_rank(&pages4cl);
     }
-    printf("\t│ %-9s │ % 9.5f │ %9d │\n", "OpenCL", time_ocl, iter_ocl);
-    printf("\t└───────────┴───────────┴───────────┘\n");
-    printf("\n");
+    printf("\t│ %-9s │ %9u │ %9.5f │ %10.5f │\n", "OpenCL", iter_ocl, time_ocl, time_seq / time_ocl);
+    printf("\t└───────────┴───────────┴───────────┴────────────┘\n");
+    printf("\n"); flush(cout);
 
     // seštej range strani
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {
@@ -119,8 +124,8 @@ int main(int argc, char **argv)
     std::sort(ranked_ocl.begin(), ranked_ocl.end(), comp4cl);
 
     // rangi se morajo sešteti v 1
-    printf("\033[1mSEŠTEVKI RANGOV\033[0m\n");
-    printf("\tRang strani je verjetnost - seštevek vseh verjetnosti mora biti 1.\n");
+    printf("SEŠTEVKI RANGOV\n");
+    printf("\tRang strani je verjetnost - vsota verjetnosti mora biti 1.\n");
     printf("\t┌───────────┬──────────────┐\n");
     printf("\t│ %-9s │ %-12s │\n", "nacin", "sestevek");
     printf("\t├───────────┼──────────────┤\n");
@@ -132,7 +137,7 @@ int main(int argc, char **argv)
 
     int32_t ndisplay = min(ranked_seq.size(), 10UL);
 
-    printf("\033[1m10 STRANI Z NAVIŠJIM RANGOM\033[0m\n");
+    printf("10 STRANI Z NAVIŠJIM RANGOM\n");
     printf("\t┌──────────┬───────────┐    ┌──────────┬───────────┐    ┌──────────┬───────────┐\n");
     printf("\t│ %-8s │ %-9s │    │ %-8s │ %-9s │    │ %-8s │ %-9s │\n", "id", "rank", "id", "rank", "id", "rank");
     printf("\t├──────────┼───────────┤    ├──────────┼───────────┤    ├──────────┼───────────┤\n");
@@ -145,7 +150,7 @@ int main(int argc, char **argv)
     printf("\t[zaporedno]                 [OpenMP]                    [OpenCL]\n");
     printf("\n");
 
-    printf("\033[1m10 STRANI Z NAJNIŽJIM RANGOM\033[0m\n");
+    printf("10 STRANI Z NAJNIŽJIM RANGOM\n");
     printf("\t┌──────────┬───────────┐    ┌──────────┬───────────┐    ┌──────────┬───────────┐\n");
     printf("\t│ %-8s │ %-9s │    │ %-8s │ %-9s │    │ %-8s │ %-9s │\n", "id", "rank", "id", "rank", "id", "rank");
     printf("\t├──────────┼───────────┤    ├──────────┼───────────┤    ├──────────┼───────────┤\n");
