@@ -33,7 +33,7 @@ int main(int argc, char **argv)
         pages.read(filename);
     }
 
-    // pretvori jo v C-jevsko strukturo za OpenCL
+    // sestavi graph za OpenCL iz obstoječega graph-a
     cout << "gradim strukturo za OpenCL... "; flush(cout);
     Graph4CL pages4cl(pages);
     cout << "zgrajeno.\n\n";
@@ -106,6 +106,7 @@ int main(int argc, char **argv)
     printf("(rang strani je verjetnost - seštevek vseh verjetnosti mora biti 1)\n");
     printf("\n");
 
+    // sortiraj rank-e strani po velikosti
     std::vector<Node> ranked;
     for (auto &[id, node] : pages.nodes) {
         ranked.emplace_back(node);
@@ -131,7 +132,7 @@ int main(int argc, char **argv)
     }
     printf("└──────────┴───────────┘\n");
 
-    // zapisi case in pohitritve v file "time-results.txt"
+    // // zapisi case in pohitritve v file "time-results.txt"
     // std::ofstream log("time-results.txt", std::ios_base::app | std::ios_base::out);
     // log << std::left << std::setw(16) << std::setfill(' ') << seq_time << "|";
     // log << std::left << std::setw(16) << std::setfill(' ') << time_omp << "|";
