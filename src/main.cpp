@@ -138,28 +138,32 @@ int main(int argc, char **argv)
     int32_t ndisplay = min(ranked_seq.size(), 10UL);
 
     printf("10 STRANI Z NAVIŠJIM RANGOM\n");
-    printf("\t┌──────────┬───────────┐    ┌──────────┬───────────┐    ┌──────────┬───────────┐\n");
-    printf("\t│ %-8s │ %-9s │    │ %-8s │ %-9s │    │ %-8s │ %-9s │\n", "id", "rank", "id", "rank", "id", "rank");
-    printf("\t├──────────┼───────────┤    ├──────────┼───────────┤    ├──────────┼───────────┤\n");
+    printf("\t┌────────┬─────────┬───────────┐    ┌────────┬─────────┬───────────┐    ┌────────┬─────────┬───────────┐\n");
+    printf("\t│ %-6s │ %7s │ %-9s │    ", "id", "povezav", "rank");
+    printf(  "│ %-6s │ %7s │ %-9s │    ", "id", "povezav", "rank");
+    printf(  "│ %-6s │ %7s │ %-9s │\n", "id", "povezav", "rank");
+    printf("\t├────────┼─────────┼───────────┤    ├────────┼─────────┼───────────┤    ├────────┼─────────┼───────────┤\n");
     for (uint32_t i = 0; i < ndisplay; i++) {
-        printf("\t│ %8d │ %8.3e │    ", ranked_seq[i].id, ranked_seq[i].rank);
-        printf("│ %8d │ %8.3e │    ", ranked_omp[i].id, ranked_omp[i].rank);
-        printf("│ %8d │ %8.3e │\n"  , ranked_ocl[i].id, ranked_ocl[i].rank);
+        printf("\t│ %6u │ %7lu │ %8.3e │    ", ranked_seq[i].id, ranked_seq[i].links_in.size(), ranked_seq[i].rank);
+        printf(  "│ %6u │ %7lu │ %8.3e │    ", ranked_omp[i].id, ranked_omp[i].links_in.size(), ranked_omp[i].rank);
+        printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i].id, ranked_ocl[i].nlinks_in, ranked_ocl[i].rank);
     }
-    printf("\t└──────────┴───────────┘    └──────────┴───────────┘    └──────────┴───────────┘\n");
-    printf("\t[zaporedno]                 [OpenMP]                    [OpenCL]\n");
+    printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
+    printf("\t[zaporedno]                         [OpenMP]                            [OpenCL]\n");
     printf("\n");
 
     printf("10 STRANI Z NAJNIŽJIM RANGOM\n");
-    printf("\t┌──────────┬───────────┐    ┌──────────┬───────────┐    ┌──────────┬───────────┐\n");
-    printf("\t│ %-8s │ %-9s │    │ %-8s │ %-9s │    │ %-8s │ %-9s │\n", "id", "rank", "id", "rank", "id", "rank");
-    printf("\t├──────────┼───────────┤    ├──────────┼───────────┤    ├──────────┼───────────┤\n");
+    printf("\t┌────────┬─────────┬───────────┐    ┌────────┬─────────┬───────────┐    ┌────────┬─────────┬───────────┐\n");
+    printf("\t│ %-6s │ %7s │ %-9s │    ", "id", "povezav", "rank");
+    printf(  "│ %-6s │ %7s │ %-9s │    ", "id", "povezav", "rank");
+    printf(  "│ %-6s │ %7s │ %-9s │\n", "id", "povezav", "rank");
+    printf("\t├────────┼─────────┼───────────┤    ├────────┼─────────┼───────────┤    ├────────┼─────────┼───────────┤\n");
     for (uint32_t i = pages.nnodes; i > pages.nnodes-ndisplay; i--) {
-        printf("\t│ %8d │ %8.3e │    ", ranked_seq[i-1].id, ranked_seq[i-1].rank);
-        printf("│ %8d │ %8.3e │    ", ranked_omp[i-1].id, ranked_omp[i-1].rank);
-        printf("│ %8d │ %8.3e │\n"  , ranked_ocl[i-1].id, ranked_ocl[i-1].rank);
+        printf("\t│ %6u │ %7lu │ %8.3e │    ", ranked_seq[i-1].id, ranked_seq[i-1].links_in.size(), ranked_seq[i-1].rank);
+        printf(  "│ %6u │ %7lu │ %8.3e │    ", ranked_omp[i-1].id, ranked_omp[i-1].links_in.size(), ranked_omp[i-1].rank);
+        printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i-1].id, ranked_ocl[i-1].nlinks_in, ranked_ocl[i-1].rank);
     }
-    printf("\t└──────────┴───────────┘    └──────────┴───────────┘    └──────────┴───────────┘\n");
-    printf("\t[zaporedno]                 [OpenMP]                    [OpenCL]\n");
+    printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
+    printf("\t[zaporedno]                         [OpenMP]                            [OpenCL]\n");
     printf("\n");
 }

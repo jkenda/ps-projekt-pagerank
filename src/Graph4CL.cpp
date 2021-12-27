@@ -1,5 +1,4 @@
 #include "Graph4CL.hpp"
-#include <cstdio>
 #include <cmath>
 #include <cstdlib>
 #include <CL/cl.h>
@@ -54,59 +53,69 @@ Graph4CL::Graph4CL(const Graph& graph)
 
 uint32_t Graph4CL_rank(Graph4CL *graph)
 {
-    // #pragma omp parallel for
-    for (uint32_t i = 0; i < graph->nnodes; i++) {
-        Node4CL *node = &graph->nodes[i];
-
-        node->rank = 1.0f / graph->nnodes;
-        node->rank_prev = 0;
-    }
-
     bool stop = false;
     rank_t sink_sum = 0;
     uint32_t iterations = 0;
 
-    while (!stop) {
-        stop = true;
-        sink_sum = 0;
-        iterations++;
-
-        for (uint32_t i = 0; i < graph->nsinks; i++) {
-            uint32_t offset = graph->sink_offsets[i];
-            Node4CL *sink   = &graph->nodes[offset];
-
-            sink_sum += sink->rank;
-        }
-
-        // #pragma omp parallel for
+    #pragma omp parallel
+    {
+        #pragma omp for
         for (uint32_t i = 0; i < graph->nnodes; i++) {
             Node4CL *node = &graph->nodes[i];
 
-            if (abs(node->rank - node->rank_prev) < DELTA) continue;
+            node->rank = 1.0f / graph->nnodes;
+            node->rank_prev = 0;
+        }
 
-            // #pragma omp atomic write
-            stop = false;
+        while (!stop) {
+            #pragma omp barrier
 
-            rank_t sum = 0;
-
-            for (uint32_t i = 0; i < node->nlinks_in; i++) {
-                uint32_t link_node = graph->link_ids[node->links_offset + i];
-                uint32_t offset = graph->offsets[link_node];
-                Node4CL *src = &graph->nodes[offset];
-
-                sum += src->rank / src->nlinks_out;
+            #pragma omp single
+            {
+                stop = true;
+                sink_sum = 0;
+                iterations++;
             }
 
-            sum *= D;
-            node->rank_new = ((1 - D) + D * sink_sum) / graph->nnodes + sum;
-        }
+            #pragma omp for reduction(+: sink_sum)
+            for (uint32_t i = 0; i < graph->nsinks; i++) {
+                uint32_t offset = graph->sink_offsets[i];
+                Node4CL *sink   = &graph->nodes[offset];
 
-        // #pragma omp parallel for
-        for (uint32_t i = 0; i < graph->nnodes; i++) {
-            Node4CL *node = &graph->nodes[i];
+                sink_sum += sink->rank;
+            }
 
-            node->rank_prev = node->rank;
-            node->rank      = node->rank_new;
+            #pragma omp single
+            for (uint32_t i = 0; i < graph->nnodes; i++) {
+                Node4CL *node = &graph->nodes[i];
+                if (abs(node->rank - node->rank_prev) < DELTA) continue;
+
+                stop = false;
+
+                #pragma omp task
+                {
+                    rank_t sum = 0;
+
+                    for (uint32_t i = 0; i < node->nlinks_in; i++) {
+                        uint32_t link_node = graph->link_ids[node->links_offset + i];
+                        uint32_t offset = graph->offsets[link_node];
+                        Node4CL *src = &graph->nodes[offset];
+
+                        sum += src->rank / src->nlinks_out;
+                    }
+
+                    sum *= D;
+                    node->rank_new = ((1 - D) + D * sink_sum) / graph->nnodes + sum;
+                }
+            }
+
+            #pragma omp parallel for schedule(dynamic, CHUNK_SIZE)
+            for (uint32_t i = 0; i < graph->nnodes; i++) {
+                Node4CL *node = &graph->nodes[i];
+
+                node->rank_prev = node->rank;
+                node->rank      = node->rank_new;
+            }
         }
     }
 

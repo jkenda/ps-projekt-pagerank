@@ -12,7 +12,7 @@ run:
 	echo -n "\a"
 
 run_slurm:	
-	srun --reservation=fri --cpus-per-task=64 bin/main web-Google/web-Google.txt | tee output
+	srun --reservation=fri bin/main web-Google/web-Google.txt | tee output
 	echo -n "\a"
 
 main.o: src/main.cpp
