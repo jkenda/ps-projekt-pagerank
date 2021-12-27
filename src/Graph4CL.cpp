@@ -1,9 +1,14 @@
 #include "Graph4CL.hpp"
 #include <cstdio>
 #include <cmath>
+#include <cstdlib>
+#include <CL/cl.h>
 
 #define DELTA (2e-19L)
 #define D (0.85L)
+
+#define WORKGROUP_SIZE	(256)
+#define MAX_SOURCE_SIZE (16384)
 
 using namespace std;
 
@@ -106,4 +111,69 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
     }
 
     return iterations;
+}
+
+void Graph4CL_rank_GPU(Graph4CL *graph) {
+    // copy paste template iz vaj
+    // veckrat zažen kernel z različnimi podatki
+    // ni treba vseh podatkov vedno prenasat?
+    // array z stop booleani?
+
+    uint32_t nsinks = graph->nsinks;
+    uint32_t nnodes = graph->nnodes;
+
+    char ch;
+	int i;
+	cl_int ret;
+    FILE *fp;
+    char *source_str;
+    size_t source_size;
+
+    fp = fopen("pagerank.cl", "r");
+    if(!fp)
+    {
+        fprintf(stderr, ":-(\n");
+        return 1;
+    }
+    source_str = (char*)malloc(MAX_SOURCE_SIZE);
+    source_size = fread(source_str, 1, MAX_SOURCE_SIZE, fp);
+    source_str[source_size] = '\0';
+    fclose(fp);
+
+    cl_platform_id	platform_id[10];
+	cl_uint			ret_num_platforms;
+	char			*buf;
+	size_t			buf_len;
+	ret = clGetPlatformIDs(10, platform_id, &ret_num_platforms);
+
+    cl_device_id	device_id[10];
+	cl_uint			ret_num_devices;
+	ret = clGetDeviceIDs(platform_id[0], CL_DEVICE_TYPE_GPU, 10, device_id, &ret_num_devices);
+
+    cl_context context = clCreateContext(NULL, 1, &device_id[0], NULL, NULL, &ret);
+
+    cl_command_queue command_queue = clCreateCommandQueue(context, device_id[0], 0, &ret);
+    
+    // delitev dela
+	size_t local_item_size = WORKGROUP_SIZE;
+	size_t num_groups = ((graph->nnodes - 1) / local_item_size + 1);
+	size_t global_item_size = num_groups * local_item_size;
+
+    // stop array
+    bool stop[num_groups] = {false};
+
+    // TODO: create buffers
+    
+    cl_program program = clCreateProgramWithSource(context, 1, (const char **)&source_str, NULL, &ret);
+
+    ret = clBuildProgram(program, 1, &device_id[0], NULL, NULL, NULL);
+
+    cl_kernel kernel = clCreateKernel(program, "vector_add", &ret);
+
+    // TODO: set arguments
+
+    // TODO 
+    while(!stop) {
+        ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, NULL);
+    }
 }

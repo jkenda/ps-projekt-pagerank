@@ -35,6 +35,7 @@ struct Graph4CL
 };
 
 uint32_t Graph4CL_rank(Graph4CL *graph);
+void Graph4CL_rank_GPU(Graph4CL *graph);
 
 /*
 definicija struktur v OpenCL:
@@ -58,5 +59,4 @@ typedef struct
     id_t max_id;
 }
 Graph4CL;
-
 */
