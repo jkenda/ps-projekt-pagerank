@@ -42,6 +42,15 @@ Graph4CL::Graph4CL(const Graph& graph)
     sink_offsets = sink_offsets_v.data();
 }
 
+float Graph4CL::data_size()
+{
+    return (nodes_v.size() * sizeof(Node4CL)
+         + offsets_v.size() * sizeof(decltype(*offsets))
+         + link_ids_v.size() * sizeof(decltype(*link_ids))
+         + sink_offsets_v.size() * sizeof(decltype(*sink_offsets)))
+        / 1'000'000.0F;
+}
+
 
 uint32_t Graph4CL_rank(Graph4CL *graph)
 {

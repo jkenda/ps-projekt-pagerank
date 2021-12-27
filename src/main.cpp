@@ -40,10 +40,11 @@ int main(int argc, char **argv)
 
     printf("OSNOVNI PODATKI\n");
     // izpiši osnovne informacije o grafu
-    cout << "\tŠtevilo strani  : " << pages.nnodes << ",\n";
-    cout << "\tštevilo povezav : " << pages.nedges << ",\n";
-    cout << "\tštevilo ponorov : " << pages.nsinks << ",\n";
-    cout << "\tnajvečji id     : " << pages.max_id << ".\n";
+    cout << "\tŠtevilo strani    : " << pages.nnodes << ",\n";
+    cout << "\tštevilo povezav   : " << pages.nedges << ",\n";
+    cout << "\tštevilo ponorov   : " << pages.nsinks << ",\n";
+    cout << "\tnajvečji id       : " << pages.max_id << ".\n";
+    cout << "\tvelikost podatkov : " << pages4cl.data_size() << " MB.\n";
     cout << '\n';
 
     rank_t sum_seq = 0, sum_omp = 0, sum_ocl = 0;
@@ -149,7 +150,7 @@ int main(int argc, char **argv)
         printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i].id, ranked_ocl[i].nlinks_in, ranked_ocl[i].rank);
     }
     printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
-    printf("\t                     [sekvencno]                            [OpenMP]                            [OpenCL]\n");
+    printf("\t                    (sekvencno)                            (OpenMP)                            (OpenCL)\n");
     printf("\n");
 
     printf("10 STRANI Z NAJNIŽJIM RANGOM\n");
@@ -164,6 +165,6 @@ int main(int argc, char **argv)
         printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i-1].id, ranked_ocl[i-1].nlinks_in, ranked_ocl[i-1].rank);
     }
     printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
-    printf("\t                     [sekvencno]                            [OpenMP]                            [OpenCL]\n");
+    printf("\t                    (sekvencno)                            (OpenMP)                            (OpenCL)\n");
     printf("\n");
 }

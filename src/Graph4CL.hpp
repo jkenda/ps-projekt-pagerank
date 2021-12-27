@@ -17,21 +17,22 @@ struct Node4CL
 struct Graph4CL
 {
     Node4CL *nodes;   // strani
-    int32_t *offsets; // id-ji veljavnih strani
+    uint32_t *offsets; // id-ji veljavnih strani
 
-    int32_t *link_ids;     // povezave
-    int32_t *sink_offsets; // sink-i
+    uint32_t *link_ids;     // povezave
+    uint32_t *sink_offsets; // sink-i
 
     uint32_t nnodes, nedges; // št. strani, povezav
     uint32_t nsinks;         // št. ponorov
     id_t  max_id;         // največji id strani
 
     std::vector<Node4CL> nodes_v;
-    std::vector<int32_t> offsets_v;
-    std::vector<int32_t> link_ids_v;
-    std::vector<int32_t> sink_offsets_v;
+    std::vector<uint32_t> offsets_v;
+    std::vector<uint32_t> link_ids_v;
+    std::vector<uint32_t> sink_offsets_v;
 
     Graph4CL(const Graph& graph);
+    float data_size();
 };
 
 uint32_t Graph4CL_rank(Graph4CL *graph);
