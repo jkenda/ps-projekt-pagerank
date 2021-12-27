@@ -63,7 +63,7 @@ int main(int argc, char **argv)
         TIMER(time_seq)
         iter_seq = pages.rank();
     }
-    printf("\t│ %-9s │ %9u │ %9.5f │ %10.5f │\n", "zaporedno", iter_seq, time_seq, time_seq / time_seq);
+    printf("\t│ %-9s │ %9u │ %9.5f │ %10.5f │\n", "sekvencno", iter_seq, time_seq, time_seq / time_seq);
     flush(cout);
 
     // seštej range strani
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
     printf("\t┌───────────┬─────────────────┐\n");
     printf("\t│ %-9s │ %-15s │\n", "nacin", "sestevek");
     printf("\t├───────────┼─────────────────┤\n");
-    printf("\t│ %-9s │ %15.13lf │\n", "zaporedno", sum_seq);
+    printf("\t│ %-9s │ %15.13lf │\n", "sekvencno", sum_seq);
     printf("\t│ %-9s │ %15.13lf │\n", "OpenMP", sum_omp);
     printf("\t│ %-9s │ %15.13lf │\n", "OpenCL", sum_ocl);
     printf("\t└───────────┴─────────────────┘\n");
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
         printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i].id, ranked_ocl[i].nlinks_in, ranked_ocl[i].rank);
     }
     printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
-    printf("\t[zaporedno]                         [OpenMP]                            [OpenCL]\n");
+    printf("\t                     [sekvencno]                            [OpenMP]                            [OpenCL]\n");
     printf("\n");
 
     printf("10 STRANI Z NAJNIŽJIM RANGOM\n");
@@ -164,6 +164,6 @@ int main(int argc, char **argv)
         printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i-1].id, ranked_ocl[i-1].nlinks_in, ranked_ocl[i-1].rank);
     }
     printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
-    printf("\t[zaporedno]                         [OpenMP]                            [OpenCL]\n");
+    printf("\t                     [sekvencno]                            [OpenMP]                            [OpenCL]\n");
     printf("\n");
 }

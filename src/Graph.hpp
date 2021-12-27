@@ -16,8 +16,8 @@ struct Node
 {
     id_t id;                     // id (številka strani)
     rank_t rank, rank_new, rank_prev;     // rangiranje
+    uint32_t nlinks_out;            // povezave iz strani
     std::vector<const Node *> links_in;  // povezave do strani
-    std::uint32_t nlinks_out;            // povezave iz strani
 
     Node(const id_t id);
 
@@ -30,7 +30,7 @@ struct Graph
     std::unordered_map<std::uint32_t, Node> nodes; // strani
     std::vector<Node *> nodes_v;                   // kazalci do veljavnih strani
     std::vector<Node *> sink_nodes;                // kazalci do ponornih strani (strani brez izhodnih povezav)
-    std::uint32_t nnodes, nedges, nsinks;          // št. strani, povezav
+    uint32_t nnodes, nedges, nsinks;          // št. strani, povezav
     id_t max_id;                          // največji id strani
 
     void read(const char *filename);
