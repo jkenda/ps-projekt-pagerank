@@ -55,7 +55,7 @@ float Graph4CL::data_size()
 uint32_t Graph4CL_rank(Graph4CL *graph)
 {
     bool stop = false;
-    rank_t sink_sum = 0;
+    rank_t sink_sum = 0.0L;
     uint32_t iterations = 0;
 
     #pragma omp parallel
@@ -64,8 +64,8 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
         for (uint32_t i = 0; i < graph->nnodes; i++) {
             Node4CL *node = &graph->nodes[i];
 
-            node->rank = 1.0f / graph->nnodes;
-            node->rank_prev = 0;
+            node->rank = 1.0L / graph->nnodes;
+            node->rank_prev = 0.0L;
         }
 
         while (!stop) {
@@ -109,6 +109,8 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
                     node->rank_new = ((1 - D) + D * sink_sum) / graph->nnodes + sum;
                 }
             }
+
+            #pragma omp taskwait
 
             #pragma omp parallel for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < graph->nnodes; i++) {

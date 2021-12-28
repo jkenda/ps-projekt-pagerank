@@ -131,8 +131,8 @@ int main(int argc, char **argv)
     printf("\t│ %-9s │ %-15s │\n", "nacin", "sestevek");
     printf("\t├───────────┼─────────────────┤\n");
     printf("\t│ %-9s │ %15.13lf │\n", "sekvencno", sum_seq);
-    printf("\t│ %-9s │ %15.13lf │\n", "OpenMP", sum_omp);
-    printf("\t│ %-9s │ %15.13lf │\n", "OpenCL", sum_ocl);
+    printf("\t│ %-9s │ %15.13lf │\n", "OpenMP"   , sum_omp);
+    printf("\t│ %-9s │ %15.13lf │\n", "OpenCL"   , sum_ocl);
     printf("\t└───────────┴─────────────────┘\n");
     printf("\n");
 

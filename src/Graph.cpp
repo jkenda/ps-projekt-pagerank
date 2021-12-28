@@ -112,8 +112,8 @@ uint32_t Graph::rank()
     uint32_t iterations = 0;
 
     for (Node *node : nodes_v) {
-        node->rank = 1.0f / nnodes;
-        node->rank_prev = 0;
+        node->rank = 1.0L / nnodes;
+        node->rank_prev = 0.0L;
     }
 
     while (!stop) {
@@ -152,22 +152,21 @@ uint32_t Graph::rank()
 uint32_t Graph::rank_omp()
 {
     bool stop = false;
-    rank_t sink_sum = 0;
+    rank_t sink_sum = 0.0L;
     uint32_t iterations = 0;
 
     #pragma omp parallel
     {
         #pragma omp for
         for (uint32_t i = 0; i < nnodes; i++) {
-            Node &node = *nodes_v[i];
+            Node *node = nodes_v[i];
 
-            node.rank = 1.0f / nnodes;
-            node.rank_prev = 0;
+            node->rank = 1.0L / nnodes;
+            node->rank_prev = 0.0L;
         }
-        
+
         while (!stop) {
             #pragma omp barrier
-
             #pragma omp single
             {
                 stop = true;
@@ -175,41 +174,45 @@ uint32_t Graph::rank_omp()
                 iterations++;
             }
 
+            bool l_stop = true;
+
             #pragma omp for reduction(+: sink_sum)
             for (uint32_t i = 0; i < nsinks; i++) {
                 sink_sum += sink_nodes[i]->rank;
             }
 
-            #pragma omp single
+            #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
-                Node &node = *nodes_v[i];
-                if (abs(node.rank - node.rank_prev) < DELTA) continue;
+                Node *const node = nodes_v[i];
+                if (abs(node->rank - node->rank_prev) < DELTA) continue;
 
-                stop = false;
+                l_stop &= false;
 
-                #pragma omp task
-                {
-                    rank_t sum = 0;
+                rank_t sum = 0;
 
-                    for (const Node *src : node.links_in) {
-                        sum += src->rank / src->nlinks_out;
-                    }
-
-                    sum *= D;
-                    node.rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
+                for (const Node *src : node->links_in) {
+                    sum += src->rank / src->nlinks_out;
                 }
-            }
 
-            #pragma omp taskwait
+                sum *= D;
+                node->rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
+            }
 
             #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
-                Node &node = *nodes_v[i];
+                Node *node = nodes_v[i];
 
-                node.rank_prev = node.rank;
-                node.rank      = node.rank_new;
+                node->rank_prev = node->rank;
+                node->rank      = node->rank_new;
             }
+
+            // vsi lokalni ustavitveni pogoji izpolnjeni -> izpolnjen ustavitveni pogoj
+            #pragma omp atomic
+            stop &= l_stop;
+            #pragma omp barrier
+            // printf("running %d %d\n", iterations, l_stop);
         }
+        // printf("finished %d\n", iterations);
     }
 
     return iterations;
