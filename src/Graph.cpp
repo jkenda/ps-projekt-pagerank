@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <omp.h>
 #include "Graph.hpp"
 
 using namespace std;
