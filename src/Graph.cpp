@@ -23,6 +23,11 @@ void Node::add_link_out()
 }
 
 
+Graph::Graph()
+: nnodes(0), nedges(0), nsinks(0), max_id(0)
+{
+}
+
 void Graph::read(const char *filename)
 {
     ifstream is(filename, ios::in);
@@ -111,11 +116,11 @@ uint32_t Graph::rank()
     uint32_t iterations = 0;
 
     for (Node *node : nodes_v) {
-        node->rank = 1.0L / nnodes;
-        node->rank_prev = 0.0L;
+        node->rank = 1.0 / nnodes;
+        node->rank_prev = 1.0;
     }
 
-    while (!stop) {
+    while (true) {
         stop = true;
         sink_sum = 0;
         iterations++;
@@ -125,7 +130,7 @@ uint32_t Graph::rank()
         }
 
         for (Node *node : nodes_v) {
-            if (abs(node->rank - node->rank_prev) < DELTA) continue;
+            if (node->rank_prev == 0.0) continue;
 
             stop = false;
 
@@ -135,13 +140,20 @@ uint32_t Graph::rank()
                 sum += src->rank / src->nlinks_out;
             }
 
-            sum *= D;
-            node->rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
+            node->rank_new = ((1 - D) + D * sink_sum) / nnodes + D * sum;
         }
 
+        if (stop) break;
+
         for (Node *node : nodes_v) {
-            node->rank_prev = node->rank;
-            node->rank      = node->rank_new;
+            if (node->rank_prev == 0.0) continue;
+            if (abs(node->rank - node->rank_prev) < DELTA) {
+                node->rank_prev = 0.0;
+            }
+            else {
+                node->rank_prev = node->rank;
+                node->rank = node->rank_new;
+            }
         }
     }
 
@@ -150,25 +162,21 @@ uint32_t Graph::rank()
 
 uint32_t Graph::rank_omp()
 {
-    bool stop = false;
-    rank_t sink_sum = 0.0L;
+    bool stop;
+    rank_t sink_sum;
     uint32_t iterations = 0;
 
     #pragma omp parallel
     {
         #pragma omp for
         for (uint32_t i = 0; i < nnodes; i++) {
-            Node *node = nodes_v[i];
-
-            node->rank = 1.0L / nnodes;
-            node->rank_prev = 0.0L;
+            nodes_v[i]->rank = 1.0 / nnodes;
+            nodes_v[i]->rank_prev = 1.0;
         }
 
-        while (!stop) {
-            #pragma omp barrier
+        while (true) {
             #pragma omp single
             {
-                stop = true;
                 sink_sum = 0;
                 iterations++;
             }
@@ -182,36 +190,41 @@ uint32_t Graph::rank_omp()
 
             #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
-                Node *const node = nodes_v[i];
-                if (abs(node->rank - node->rank_prev) < DELTA) continue;
+                if (nodes_v[i]->rank_prev == 0.0) continue;
 
-                l_stop &= false;
+                l_stop = false;
 
                 rank_t sum = 0;
 
-                for (const Node *src : node->links_in) {
+                for (const Node *src : nodes_v[i]->links_in) {
                     sum += src->rank / src->nlinks_out;
                 }
 
-                sum *= D;
-                node->rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
+                nodes_v[i]->rank_new = ((1 - D) + D * sink_sum) / nnodes + D * sum;
             }
 
-            #pragma omp for schedule(dynamic, CHUNK_SIZE)
-            for (uint32_t i = 0; i < nnodes; i++) {
-                Node *node = nodes_v[i];
+            #pragma omp single
+            stop = true;
+            #pragma omp barrier
 
-                node->rank_prev = node->rank;
-                node->rank      = node->rank_new;
-            }
-
-            // vsi lokalni ustavitveni pogoji izpolnjeni -> izpolnjen ustavitveni pogoj
             #pragma omp atomic
             stop &= l_stop;
             #pragma omp barrier
-            // printf("running %d %d\n", iterations, l_stop);
+
+            if (stop) break;
+
+            #pragma omp for
+            for (uint32_t i = 0; i < nnodes; i++) {
+                if (nodes_v[i]->rank_prev == 0.0) continue;
+                if (abs(nodes_v[i]->rank - nodes_v[i]->rank_prev) < DELTA) {
+                    nodes_v[i]->rank_prev = 0.0;
+                }
+                else {
+                    nodes_v[i]->rank_prev = nodes_v[i]->rank;
+                    nodes_v[i]->rank = nodes_v[i]->rank_new;
+                }
+            }
         }
-        // printf("finished %d\n", iterations);
     }
 
     return iterations;

@@ -33,8 +33,41 @@ struct Graph
     uint32_t nnodes, nedges, nsinks;          // št. strani, povezav
     id_t max_id;                          // največji id strani
 
+    Graph();
+
     void read(const char *filename);
 
     uint32_t rank();
     uint32_t rank_omp();
 };
+
+/*
+Input: Let G represents set of web pages or nodes 
+Output: A file showing PageRank for each web page
+
+for each node n in Graph do in parallel
+    n.prev_PR := 1.0
+
+for 1 to k do
+
+    for each node n Graph do in parallel
+        n.PR := 0
+
+        for each page p in n. inlinkneighbors do
+            sum := 0.0
+
+            for each page q in p.outlinkneighbors do
+                sum q.prev_PR
+                n.PR += (1-d) + d * p.PR
+
+    difference := 0
+    for each node n Graph do in parallel
+        difference := maximum(n.PR-n.prev_PR, mx)
+
+    if difference < threshold do
+        stop the program
+
+    for each node n Graph do in parallel
+        n.prev_PR=n.PR
+
+*/
