@@ -68,16 +68,16 @@ int main(int argc, char **argv)
     flush(cout);
 
     // seštej range strani
-    for (const auto &[id, node] : pages.nodes) {
+    for (const Node &node : pages.nodes) {
         sum_seq += node.rank;
     }
 
     // sortiraj range strani po velikosti
-    std::vector<Node> ranked_seq;
-    for (auto &[id, node] : pages.nodes) {
-        ranked_seq.emplace_back(node);
+    vector<Node> ranked_seq;
+    for (const Node &node : pages.nodes) {
+        ranked_seq.push_back(node);
     }
-    std::sort(ranked_seq.begin(), ranked_seq.end(), comp);
+    sort(ranked_seq.begin(), ranked_seq.end(), comp);
 
     // OpenMP
 
@@ -89,16 +89,16 @@ int main(int argc, char **argv)
     flush(cout);
 
     // seštej range strani
-    for (const auto &[id, node] : pages.nodes) {
+    for (const Node &node : pages.nodes) {
         sum_omp += node.rank;
     }
 
     // sortiraj range strani po velikosti
-    std::vector<Node> ranked_omp;
-    for (auto &[id, node] : pages.nodes) {
-        ranked_omp.emplace_back(node);
+    vector<Node> ranked_omp;
+    for (const Node &node : pages.nodes) {
+        ranked_omp.push_back(node);
     }
-    std::sort(ranked_omp.begin(), ranked_omp.end(), comp);
+    sort(ranked_omp.begin(), ranked_omp.end(), comp);
 
     // OpenCL
 
@@ -117,12 +117,12 @@ int main(int argc, char **argv)
     }
 
     // sortiraj range strani po velikosti
-    std::vector<Node4CL> ranked_ocl;
+    vector<Node4CL> ranked_ocl;
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {
         Node4CL &node = pages4cl.nodes[i]; 
         ranked_ocl.emplace_back(node);
     }
-    std::sort(ranked_ocl.begin(), ranked_ocl.end(), comp4cl);
+    sort(ranked_ocl.begin(), ranked_ocl.end(), comp4cl);
 
     // rangi se morajo sešteti v 1
     printf("SEŠTEVKI RANGOV\n");

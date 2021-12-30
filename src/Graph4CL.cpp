@@ -8,7 +8,7 @@ Node4CL::Node4CL(id_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t link
 {
 }
 
-Graph4CL::Graph4CL(const Graph& graph)
+Graph4CL::Graph4CL(const Graph &graph)
 : nnodes(graph.nnodes), nedges(graph.nedges), max_id(graph.max_id), nsinks(graph.nsinks)
 {
     offsets_v.reserve(max_id + 1);
@@ -17,14 +17,13 @@ Graph4CL::Graph4CL(const Graph& graph)
     link_ids_v.reserve(nedges);
     sink_offsets_v.reserve(nsinks);
 
-    for (const auto &[id, node] : graph.nodes) {
+    for (const Node &node : graph.nodes) {
         uint32_t nodes_offset = nodes_v.size();
         uint32_t links_offset = link_ids_v.size();
         uint32_t nlinks_in = node.links_in.size();
 
-        offsets_v[id] = nodes_offset;
-        
-        nodes_v.emplace_back(id, nlinks_in, node.nlinks_out, links_offset);
+        offsets_v[node.id] = nodes_offset;
+        nodes_v.emplace_back(node.id, nlinks_in, node.nlinks_out, links_offset);
         
         if (node.nlinks_out == 0) {
             sink_offsets_v.emplace_back(nodes_offset);
