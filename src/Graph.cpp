@@ -81,11 +81,11 @@ void Graph::read(const char *filename)
 
     while (is >> l_id, is >> r_id) {
         // dodaj vozlišči, če še ne obstajata
-        if (!nodes_map.contains(l_id)) {
+        if (nodes_map.find(l_id) == nodes_map.end()) {
             nodes.emplace_back(l_id);
             nodes_map.insert({l_id, &nodes.back()});
         }
-        if (!nodes_map.contains(r_id)) {
+        if (nodes_map.find(r_id) == nodes_map.end()) {
             nodes.emplace_back(r_id);
             nodes_map.insert({r_id, &nodes.back()});
         }
