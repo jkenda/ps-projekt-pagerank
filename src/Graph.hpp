@@ -36,7 +36,7 @@ struct Graph
     void read(const char *filename);
 
     uint32_t rank();
-    uint32_t rank_omp();
+    uint32_t rank_omp(const uint32_t &nthreads);
 };
 
 /*

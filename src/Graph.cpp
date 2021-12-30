@@ -167,13 +167,13 @@ uint32_t Graph::rank()
     return iterations;
 }
 
-uint32_t Graph::rank_omp()
+uint32_t Graph::rank_omp(const uint32_t &nthreads)
 {
     bool stop;
     rank_t sink_sum;
     uint32_t iterations = 0;
 
-    #pragma omp parallel
+    #pragma omp parallel num_threads(nthreads)
     {
         #pragma omp for
         for (uint32_t i = 0; i < nnodes; i++) {
