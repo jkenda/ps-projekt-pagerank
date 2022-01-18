@@ -2,18 +2,18 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <cstdint>
-#include <omp.h>
 #include "Graph.hpp"
 
 using namespace std;
 
-Node::Node(const id_t id)
+Node::Node(const id_t &id)
 : id(id), nlinks_out(0)
 {
 }
 
-void Node::add_link_in(const Node& link)
+void Node::add_link_in(const Node &link)
 {
     links_in.push_back(&link);
 }
@@ -23,6 +23,11 @@ void Node::add_link_out()
     nlinks_out++;
 }
 
+
+Graph::Graph()
+: nnodes(0), nedges(0), nsinks(0), max_id(0)
+{
+}
 
 void Graph::read(const char *filename)
 {
@@ -52,57 +57,62 @@ void Graph::read(const char *filename)
     words.clear();
     words.str(line);
 
+    unordered_map<uint32_t, Node *> nodes_map;
+    nodes_map.reserve(nnodes);
     nodes.reserve(nnodes);
 
-    uint32_t a, b;
-    words >> a; words >> b;
+    uint32_t l_id, r_id;
+    words >> l_id; words >> r_id;
 
     // dodaj prvi vozlišči
-    const auto &[it_a, _a] = nodes.try_emplace(a, a);
-    const auto &[it_b, _b] = nodes.try_emplace(b, b);
-    Node &node_a = it_a->second, &node_b = it_b->second;
+    nodes.emplace_back(l_id);
+    nodes_map.insert({l_id, &nodes.back()});
+    nodes.emplace_back(r_id);
+    nodes_map.insert({r_id, &nodes.back()});
+    Node &l_node = *nodes_map[l_id], &r_node = *nodes_map[r_id];
 
-    // dodaj prvo povezavo v množico
-    node_b.add_link_in(node_a);
-    node_a.add_link_out();
+    // dodaj prvo povezavo
+    r_node.add_link_in(l_node);
+    l_node.add_link_out();
     nedges = 1;
 
-    // največji id
-    max_id = max(a, b);
+    // začetni največji id
+    max_id = max(l_id, r_id);
 
-    while (is >> a, is >> b) {
+    while (is >> l_id, is >> r_id) {
         // dodaj vozlišči, če še ne obstajata
-        const auto &[it_a, _a] = nodes.try_emplace(a, a);
-        const auto &[it_b, _b] = nodes.try_emplace(b, b);
-        Node &node_a = it_a->second, &node_b = it_b->second;
+        if (nodes_map.find(l_id) == nodes_map.end()) {
+            nodes.emplace_back(l_id);
+            nodes_map.insert({l_id, &nodes.back()});
+        }
+        if (nodes_map.find(r_id) == nodes_map.end()) {
+            nodes.emplace_back(r_id);
+            nodes_map.insert({r_id, &nodes.back()});
+        }
+        Node &l_node = *nodes_map[l_id], &r_node = *nodes_map[r_id];
 
         // dodaj povezavi vozliščema
-        node_b.add_link_in(node_a);
-        node_a.add_link_out();
+        r_node.add_link_in(l_node);
+        l_node.add_link_out();
         nedges++;
 
         // največji id
-        max_id = max(max_id, max(a, b));
+        max_id = max(max_id, max(l_id, r_id));
     }
 
     // rezerviraj prostor v vektorjih
     nnodes = nodes.size();
-    nodes_v.reserve(nnodes);
     sink_nodes.reserve(nnodes);
 
-    nsinks = 0;
-
-    for (auto &[id, node] : nodes) {
-        nodes_v.emplace_back(&node);
-
+    for (Node &node : nodes) {
         if (node.nlinks_out == 0) {
-            sink_nodes.emplace_back(&node);
-            nsinks++;
+            sink_nodes.push_back(&node);
         }
     }
 
     // zmanjšaj vektor na pravo velikost
     sink_nodes.shrink_to_fit();
+    nsinks = sink_nodes.size();
 }
 
 uint32_t Graph::rank()
@@ -111,12 +121,12 @@ uint32_t Graph::rank()
     rank_t sink_sum = 0;
     uint32_t iterations = 0;
 
-    for (Node *node : nodes_v) {
-        node->rank = 1.0f / nnodes;
-        node->rank_prev = 0;
+    for (Node &node : nodes) {
+        node.rank = 1.0 / nnodes;
+        node.rank_prev = 1.0;
     }
 
-    while (!stop) {
+    while (true) {
         stop = true;
         sink_sum = 0;
         iterations++;
@@ -125,89 +135,104 @@ uint32_t Graph::rank()
             sink_sum += sink_node->rank;
         }
 
-        for (Node *node : nodes_v) {
-            if (abs(node->rank - node->rank_prev) < DELTA) continue;
+        for (Node &node : nodes) {
+            if (node.rank_prev == 0.0) continue;
 
             stop = false;
 
             rank_t sum = 0;
 
-            for (const Node *src : node->links_in) {
+            for (const Node *src : node.links_in) {
                 sum += src->rank / src->nlinks_out;
             }
 
-            sum *= D;
-            node->rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
+            node.rank_new = ((1.0 - D) + D * sink_sum) / nnodes + D * sum;
         }
 
-        for (Node *node : nodes_v) {
-            node->rank_prev = node->rank;
-            node->rank      = node->rank_new;
+        if (stop) break;
+
+        for (Node &node : nodes) {
+            if (node.rank_prev == 0.0) continue;
+            if (abs(node.rank - node.rank_prev) < DELTA) {
+                node.rank = node.rank_new;
+                node.rank_prev = 0.0;
+            }
+            else {
+                node.rank_prev = node.rank;
+                node.rank = node.rank_new;
+            }
         }
     }
 
     return iterations;
 }
 
-uint32_t Graph::rank_omp()
+uint32_t Graph::rank_omp(const uint32_t &nthreads)
 {
-    bool stop = false;
-    rank_t sink_sum = 0;
+    bool stop;
+    rank_t sink_sum;
     uint32_t iterations = 0;
 
-    #pragma omp parallel
+    #pragma omp parallel num_threads(nthreads)
     {
         #pragma omp for
         for (uint32_t i = 0; i < nnodes; i++) {
-            Node &node = *nodes_v[i];
-
-            node.rank = 1.0f / nnodes;
-            node.rank_prev = 0;
+            nodes[i].rank = 1.0 / nnodes;
+            nodes[i].rank_prev = 1.0;
         }
-        
-        while (!stop) {
-            #pragma omp barrier
+
+        while (true) {
 
             #pragma omp single
             {
-                stop = true;
                 sink_sum = 0;
                 iterations++;
             }
+
+            bool l_stop = true;
 
             #pragma omp for reduction(+: sink_sum)
             for (uint32_t i = 0; i < nsinks; i++) {
                 sink_sum += sink_nodes[i]->rank;
             }
 
-            #pragma omp single
-            for (uint32_t i = 0; i < nnodes; i++) {
-                Node &node = *nodes_v[i];
-                if (abs(node.rank - node.rank_prev) < DELTA) continue;
-
-                stop = false;
-
-                #pragma omp task
-                {
-                    rank_t sum = 0;
-
-                    for (const Node *src : node.links_in) {
-                        sum += src->rank / src->nlinks_out;
-                    }
-
-                    sum *= D;
-                    node.rank_new = ((1 - D) + D * sink_sum) / nnodes + sum;
-                }
-            }
-
-            #pragma omp taskwait
-
             #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
-                Node &node = *nodes_v[i];
+                if (nodes[i].rank_prev == 0.0) continue;
 
-                node.rank_prev = node.rank;
-                node.rank      = node.rank_new;
+                l_stop = false;
+
+                rank_t sum = 0;
+
+                for (const Node *src : nodes[i].links_in) {
+                    sum += src->rank / src->nlinks_out;
+                }
+
+                nodes[i].rank_new = ((1.0 - D) + D * sink_sum) / nnodes + D * sum;
+            }
+
+            #pragma omp single
+            stop = true;
+            #pragma omp barrier
+
+            // izpolnjeni vsi lokalni ustavitveni pogoji -> izpolnjen ustavitveni pogoj
+            #pragma omp atomic
+            stop &= l_stop;
+            #pragma omp barrier
+
+            if (stop) break;
+
+            #pragma omp for
+            for (uint32_t i = 0; i < nnodes; i++) {
+                if (nodes[i].rank_prev == 0.0) continue;
+                if (abs(nodes[i].rank_new - nodes[i].rank_prev) < DELTA) {
+                    nodes[i].rank = nodes[i].rank_new;
+                    nodes[i].rank_prev = 0.0;
+                }
+                else {
+                    nodes[i].rank_prev = nodes[i].rank;
+                    nodes[i].rank = nodes[i].rank_new;
+                }
             }
         }
     }
