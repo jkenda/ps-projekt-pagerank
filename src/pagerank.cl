@@ -1,6 +1,4 @@
-__kernel void pagerank(__global const float *A,	
-						 __global float *C,			
-						 int size)						
+__kernel void pagerank()					
 {														
-	
+	int i = get_global_id();
 }

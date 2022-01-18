@@ -1,5 +1,5 @@
 CPPC= g++
-FLAGS= -std=c++17 -O2 -fopenmp -s -mtune=native
+FLAGS= -std=c++17 -O2 -fopenmp -lOpenCL -s -mtune=native
 DEBUG_FLAGS= -std=c++17 -g
 
 

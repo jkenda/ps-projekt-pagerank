@@ -100,7 +100,11 @@ int main(int argc, char **argv)
     std::sort(ranked_omp.begin(), ranked_omp.end(), comp);
 
     // OpenCL
-
+    
+    cout << "STARTING GPU CODE" << endl;
+    Graph4CL_rank_GPU(&pages4cl);
+    cout << "CODE DONE" << endl;
+    
     {
         TIMER(time_ocl)
         iter_ocl = Graph4CL_rank(&pages4cl);
