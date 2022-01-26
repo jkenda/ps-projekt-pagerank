@@ -196,7 +196,7 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
                 sink_sum += sink_nodes[i]->rank;
             }
 
-            #pragma omp for schedule(dynamic, CHUNK_SIZE)
+            #pragma omp for
             for (uint32_t i = 0; i < nnodes; i++) {
                 if (nodes[i].rank_prev == 0.0) continue;
 

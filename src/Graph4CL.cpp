@@ -1,8 +1,8 @@
-#include "Graph4CL.hpp"
 #include <cmath>
 #include <cstdlib>
 #include <CL/cl.h>
 #include <iostream>
+#include "Graph4CL.hpp"
 
 #define WORKGROUP_SIZE	(256)
 #define MAX_SOURCE_SIZE (16384)
@@ -59,83 +59,129 @@ float Graph4CL::data_size()
 
 uint32_t Graph4CL_rank(Graph4CL *graph)
 {
-    bool stop;
-    rank_t sink_sum;
-    uint32_t iterations = 0;
+    char ch;
+	int i;
+	cl_int ret;
+    FILE *fp;
+    char *source_str;
+    size_t source_size;
 
-    #pragma omp parallel
+    // STOP ARRAY
+    bool *stop_arr = (bool *)malloc(graph->nnodes * sizeof(bool));
+
+    fp = fopen("./src/pagerank.cl", "r");
+    if(!fp)
     {
-        #pragma omp for
-        for (uint32_t i = 0; i < graph->nnodes; i++) {
-            Node4CL *node = &graph->nodes[i];
+        fprintf(stderr, ":-(\n");
+        return 1;
+    }
+    source_str = (char*)malloc(MAX_SOURCE_SIZE);
+    source_size = fread(source_str, 1, MAX_SOURCE_SIZE, fp);
+    source_str[source_size] = '\0';
+    fclose(fp);
 
-            node->rank = 1.0 / graph->nnodes;
-            node->rank_prev = 0.0;
-        }
+	cl_platform_id	platform_id[10];
+	cl_uint			ret_num_platforms;
+	char			*buf;
+	size_t			buf_len;
+	ret = clGetPlatformIDs(10, platform_id, &ret_num_platforms);
 
-        while (true) {
+    cl_device_id	device_id[10];
+	cl_uint			ret_num_devices;
+    ret = clGetDeviceIDs(platform_id[0], CL_DEVICE_TYPE_GPU, 10, device_id, &ret_num_devices);
 
-            #pragma omp single
-            {
-                sink_sum = 0;
-                iterations++;
-            }
+   	cl_context context = clCreateContext(NULL, 1, &device_id[0], NULL, NULL, &ret);
 
-            bool l_stop = true;
+   	cl_command_queue command_queue = clCreateCommandQueue(context, device_id[0], 0, &ret);
 
-            #pragma omp for reduction(+: sink_sum)
-            for (uint32_t i = 0; i < graph->nsinks; i++) {
-                uint32_t offset = graph->sink_offsets[i];
-                Node4CL *sink   = &graph->nodes[offset];
+    size_t local_item_size = WORKGROUP_SIZE;
+	size_t num_groups = ((graph->nnodes - 1) / local_item_size + 1);
+	size_t global_item_size = num_groups * local_item_size;
 
-                sink_sum += sink->rank;
-            }
-
-            #pragma omp for schedule(dynamic, CHUNK_SIZE)
-            for (uint32_t i = 0; i < graph->nnodes; i++) {
-                Node4CL *node = &graph->nodes[i];
-                if (abs(node->rank - node->rank_prev) < DELTA) continue;
-
-                l_stop = false;
-
-                rank_t sum = 0;
-
-                for (uint32_t i = 0; i < node->nlinks_in; i++) {
-                    uint32_t link_node = graph->link_ids[node->links_offset + i];
-                    uint32_t offset = graph->offsets[link_node];
-                    Node4CL *src = &graph->nodes[offset];
-
-                    sum += src->rank / src->nlinks_out;
-                }
-
-                node->rank_new = ((1 - D) + D * sink_sum) / graph->nnodes + D * sum;
-            }
-
-            #pragma omp single
-            stop = true;
-            #pragma omp barrier
-
-            // vsi lokalni ustavitveni pogoji izpolnjeni -> izpolnjen ustavitveni pogoj
-            #pragma omp atomic
-            stop &= l_stop;
-            #pragma omp barrier
-
-            if (stop) break;
-
-            #pragma omp parallel for
-            for (uint32_t i = 0; i < graph->nnodes; i++) {
-                Node4CL *node = &graph->nodes[i];
-
-                node->rank_prev = node->rank;
-                node->rank      = node->rank_new;
-            }
-
-        }
+    for (uint32_t i = 0; i < graph->nnodes; i++) {
+        graph->nodes[i].rank = 1.0 / graph->nnodes;
+        graph->nodes[i].rank_prev = 1.0;
     }
 
-    return iterations;
-}
+    cl_mem nodes_mem_obj = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
+                                          graph->nnodes * sizeof(Node4CL), graph->nodes, &ret);
+    cl_mem offsets_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
+                                            (graph->max_id + 1) * sizeof(uint32_t), graph->offsets, &ret);
+    cl_mem link_ids_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
+                                             graph->nedges * sizeof(uint32_t), graph->link_ids, &ret);
+    cl_mem stop_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, 
+                                         graph->nnodes * sizeof(bool), stop_arr, &ret);
+                                    
+    cl_program program = clCreateProgramWithSource(context, 1, (const char **)&source_str, NULL, &ret);
 
-void Graph4CL_rank_GPU(Graph4CL *graph) {
-    
+    ret = clBuildProgram(program, 1, &device_id[0], NULL, NULL, NULL);
+
+    cl_kernel kernel = clCreateKernel(program, "pagerank", &ret);
+
+    ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&nodes_mem_obj);
+    ret |= clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&offsets_mem_obj);
+    ret |= clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&link_ids_mem_obj);
+    ret |= clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&stop_mem_obj);
+    ret |= clSetKernelArg(kernel, 4, sizeof(cl_uint), (void *)&(graph->nnodes));
+
+    // PAGERANK
+    bool stop = false;
+    rank_t sink_sum = 0;
+    uint32_t iterations = 0;
+
+    while(true) {
+        stop = true;
+        sink_sum = 0;
+        iterations++;
+
+        for (uint32_t i = 0; i < graph->nsinks; i++) {
+            sink_sum += graph->nodes[graph->sink_offsets[i]].rank;
+        }
+        ret |= clSetKernelArg(kernel, 5, sizeof(cl_double), (void *)&(sink_sum));
+
+        ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, NULL);
+        ret = clEnqueueReadBuffer(command_queue, nodes_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(Node4CL), 
+                                  graph->nodes, 0, NULL, NULL);
+        ret = clEnqueueReadBuffer(command_queue, stop_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(bool), 
+                                  stop_arr, 0, NULL, NULL);
+
+        for (uint32_t i = 0; i < graph->nnodes; i++) {
+            if (!stop_arr[i]) {
+                stop = false;
+                break;
+            }
+        }
+        if (stop || iterations == 67) break;
+
+        for (uint32_t i = 0; i < graph->nnodes; i++) {
+            if (graph->nodes[i].rank_prev == 0.0) continue;
+
+            if (abs(graph->nodes[i].rank - graph->nodes[i].rank_prev) < DELTA) {
+                graph->nodes[i].rank = graph->nodes[i].rank_new;
+                graph->nodes[i].rank_prev = 0.0;
+            }
+            else {
+                graph->nodes[i].rank_prev = graph->nodes[i].rank;
+                graph->nodes[i].rank = graph->nodes[i].rank_new;
+            }
+        }
+
+        ret = clEnqueueWriteBuffer(command_queue, nodes_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(Node4CL), 
+                                   graph->nodes, 0, NULL, NULL);
+    }
+
+    ret = clFlush(command_queue);
+	ret = clFinish(command_queue);
+	ret = clReleaseKernel(kernel);
+	ret = clReleaseProgram(program);
+	ret = clReleaseMemObject(nodes_mem_obj);
+	ret = clReleaseMemObject(offsets_mem_obj);
+	ret = clReleaseMemObject(link_ids_mem_obj);
+	ret = clReleaseMemObject(stop_mem_obj);
+	ret = clReleaseCommandQueue(command_queue);
+	ret = clReleaseContext(context);
+
+    free(stop_arr);
+
+    return iterations;
 }
