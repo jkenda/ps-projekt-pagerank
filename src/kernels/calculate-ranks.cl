@@ -19,9 +19,6 @@ __kernel void calcranks(__global Node4CL *nodes,
     int gid = get_global_id(0);
     double d = 0.85;
     uint index = 0;
-    // if (gid == 0) {
-    //     stop[0] = false;
-    // }
 
     while(gid < nnodes) 
     {
