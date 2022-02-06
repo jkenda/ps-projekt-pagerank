@@ -12,18 +12,21 @@ Node4CL;
 __kernel void calcranks(__global Node4CL *nodes,
                        __global const uint *offsets,
                        __global const uint *link_ids,
-                       __global unsigned char stop,
+                       __global bool *stop,
                        uint nnodes,
                        double sink_sum)
 {														
     int gid = get_global_id(0);
     double d = 0.85;
     uint index = 0;
+    // if (gid == 0) {
+    //     stop[0] = false;
+    // }
 
     while(gid < nnodes) 
     {
         if (nodes[gid].rank_prev != 0.0) {    
-            stop = 0;
+            stop[0] = false;
         
             double sum = 0;
 

@@ -66,7 +66,8 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
     size_t source_size;
     // char **source_strings;
     
-    unsigned char stop = 1;
+    bool *stop = (bool *)malloc(sizeof(bool));
+    stop[0] = true;
 
     // READ KERNELS FROM .CL FILES
     // source_strings = (char **)malloc(3 * sizeof(char *));
@@ -157,7 +158,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
     cl_mem sink_offsets_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
                                                  graph->nsinks * sizeof(uint32_t), graph->sink_offsets, &ret);
     cl_mem stop_mem_obj = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
-                                         sizeof(unsigned char), &stop, &ret);
+                                         sizeof(bool), stop, &ret);
     cl_mem p_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 
                                       sinksum_num_groups * sizeof(double), NULL, &ret);
 
@@ -215,32 +216,32 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
         iterations++;
 
         // sinksum
-        ret = clEnqueueNDRangeKernel(command_queue, calcranks_kernel, 1, NULL, 
-                                     &sinksum_global_item_size, &local_item_size, 0, NULL, NULL);
-        ret = clEnqueueReadBuffer(command_queue, p_mem_obj, CL_TRUE, 0, sinksum_num_groups * sizeof(double),
-                                  p, 0, NULL, NULL);
-        for (i=0; i<num_groups; i++)
-		    sink_sum += p[i];
-        // ret = clEnqueueReadBuffer(command_queue, nodes_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(Node4CL), 
-        //                           graph->nodes, 0, NULL, NULL);
-        // for (uint32_t i = 0; i < graph->nsinks; i++) {
-        //     sink_sum += graph->nodes[graph->sink_offsets[i]].rank;
-        // }
+        // ret = clEnqueueNDRangeKernel(command_queue, calcranks_kernel, 1, NULL, 
+        //                              &sinksum_global_item_size, &local_item_size, 0, NULL, NULL);
+        // ret = clEnqueueReadBuffer(command_queue, p_mem_obj, CL_TRUE, 0, sinksum_num_groups * sizeof(double),
+        //                           p, 0, NULL, NULL);
+        // for (i=0; i<num_groups; i++)
+		//     sink_sum += p[i];
+        ret = clEnqueueReadBuffer(command_queue, nodes_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(Node4CL), 
+                                  graph->nodes, 0, NULL, NULL);
+        for (uint32_t i = 0; i < graph->nsinks; i++) {
+            sink_sum += graph->nodes[graph->sink_offsets[i]].rank;
+        }
         ret = clSetKernelArg(calcranks_kernel, 5, sizeof(cl_double), (void *)&(sink_sum));
 
         // calcranks
         ret = clEnqueueNDRangeKernel(command_queue, calcranks_kernel, 1, NULL, 
                                      &global_item_size, &local_item_size, 0, NULL, NULL);
-        
+
         // stopcheck
-        ret = clEnqueueReadBuffer(command_queue, stop_mem_obj, CL_TRUE, 0, sizeof(unsigned char),
-                                  &stop, 0, NULL, NULL);
-        if (stop == 1) { 
+        ret = clEnqueueReadBuffer(command_queue, stop_mem_obj, CL_TRUE, 0, sizeof(bool),
+                                  stop, 0, NULL, NULL);
+        if (stop[0]) { 
             break;
         }
-        stop = 1;
-        ret = clEnqueueWriteBuffer(command_queue, stop_mem_obj, CL_TRUE, 0, sizeof(unsigned char),
-                                   &stop, 0, NULL, NULL);
+        stop[0] = true;
+        ret = clEnqueueWriteBuffer(command_queue, stop_mem_obj, CL_TRUE, 0, sizeof(bool),
+                                   stop, 0, NULL, NULL);
         
         // sortranks
         ret = clEnqueueNDRangeKernel(command_queue, sortranks_kernel, 1, NULL, 
