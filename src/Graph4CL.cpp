@@ -4,7 +4,6 @@
 #include <CL/cl.h>
 #include "Graph4CL.hpp"
 
-#define WORKGROUP_SIZE	(256)
 #define MAX_SOURCE_SIZE (16384)
 
 using namespace std;
@@ -59,7 +58,7 @@ float Graph4CL::data_size()
 }
 
 
-uint32_t Graph4CL_rank(Graph4CL *graph)
+uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
 {
     char ch;
 	int i;
@@ -136,9 +135,8 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
    	cl_command_queue command_queue = clCreateCommandQueue(context, device_id[0], 0, &ret);
 
     // SET WORK SIZES
-    size_t local_item_size = WORKGROUP_SIZE;
-	size_t num_groups = ((graph->nnodes - 1) / local_item_size + 1);
-	size_t global_item_size = num_groups * local_item_size;
+	size_t num_groups = ((graph->nnodes - 1) / wg_size + 1);
+	size_t global_item_size = num_groups * wg_size;
 
 	// size_t sinksum_num_groups = ((graph->nsinks - 1) / local_item_size + 1);
 	// size_t sinksum_global_item_size = num_groups * local_item_size;
@@ -208,7 +206,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
 
     // initranks
     ret = clEnqueueNDRangeKernel(command_queue, initranks_kernel, 1, NULL, 
-                                 &global_item_size, &local_item_size, 0, NULL, NULL);
+                                 &global_item_size, &wg_size, 0, NULL, NULL);
     while(true) {
         sink_sum = 0;
         iterations++;
@@ -232,7 +230,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
 
         // calcranks
         ret = clEnqueueNDRangeKernel(command_queue, calcranks_kernel, 1, NULL, 
-                                     &global_item_size, &local_item_size, 0, NULL, NULL);
+                                     &global_item_size, &wg_size, 0, NULL, NULL);
 
         // stopcheck
         ret = clEnqueueReadBuffer(command_queue, stop_mem_obj, CL_TRUE, 0, sizeof(bool),
@@ -246,7 +244,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
         
         // sortranks
         ret = clEnqueueNDRangeKernel(command_queue, sortranks_kernel, 1, NULL, 
-                                     &global_item_size, &local_item_size, 0, NULL, NULL);
+                                     &global_item_size, &wg_size, 0, NULL, NULL);
     }
 
     ret = clEnqueueReadBuffer(command_queue, ranks_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(rank_t),

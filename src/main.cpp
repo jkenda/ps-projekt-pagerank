@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cstdarg>
 #include <omp.h>
+#include <float.h>
 #include "Graph.hpp"
 #include "Graph4CL.hpp"
 #include "Timer.hpp"
@@ -11,6 +12,66 @@ using namespace std;
 
 bool comp(const Node &a, const Node &b){ return a.rank > b.rank; }
 bool comp4cl(const Node4CL &a, const Node4CL &b){ return a.rank > b.rank; }
+
+void find_optimal_wg_size(Graph4CL *pages4cl, uint32_t lower, uint32_t upper, float time_seq, float min)
+{
+    float time_lower, time_upper, time_mid;
+    uint32_t iter_lower, iter_mid, iter_upper;
+    float time_min; uint32_t wg_size_min, iter_min;
+    
+    const uint32_t mid = (lower + upper) / 2;
+
+    {
+        TIMER(time_lower)
+        iter_lower = Graph4CL_rank(pages4cl, lower);
+    }
+    {
+        TIMER(time_upper)
+        iter_mid = Graph4CL_rank(pages4cl, upper);
+    }
+    {
+        TIMER(time_mid)
+        iter_upper = Graph4CL_rank(pages4cl, mid);
+    }
+
+    if (time_lower < time_mid && time_lower < time_upper) {
+        time_min = time_lower;
+        wg_size_min = lower;
+        iter_min = iter_lower;
+    }
+    else if (time_mid < time_upper) {
+        time_min = time_mid;
+        wg_size_min = mid;
+        iter_min = iter_mid;
+    }
+    else {
+        time_min = time_upper;
+        wg_size_min = upper;
+        iter_min = iter_upper;
+    }
+
+    if (time_min < min) {
+        printf("\t│ %-9s │ %7u │ %9u │ %9.5f │ %10.5f │\n", "OpenCL", wg_size_min, iter_min, time_min, time_seq / time_min);
+        flush(cout);
+        min = time_min;
+    }
+
+    if (upper - lower <= 2) return;
+
+    if (time_lower <= time_upper && time_mid <= time_upper) {
+        // lower and mid are the fastest
+        find_optimal_wg_size(pages4cl, lower, mid, time_seq, min);
+    }
+    else if (time_mid <= time_lower && time_upper <= time_lower) {
+        // mid and upper are the fastest
+        find_optimal_wg_size(pages4cl, mid, upper, time_seq, min);
+    }
+    else {
+        // lower and upper are the fastest
+        find_optimal_wg_size(pages4cl, (lower + mid) / 2, (mid + upper) / 2, time_seq, min);
+    }
+
+}
 
 int main(int argc, char **argv)
 {
@@ -56,16 +117,16 @@ int main(int argc, char **argv)
 
     printf("IZVAJANJE\n");
     // sekvenčni algoritem
-    printf("\t┌───────────┬──────┬───────────┬───────────┬────────────┐\n");
-    printf("\t│ %-9s │ %-4s │ %-9s │ %-9s │ %-10s │\n", "nacin", "niti", "iteracije", "cas [s]", "pohitritev");
-    printf("\t├───────────┼──────┼───────────┼───────────┼────────────┤\n");
+    printf("\t┌───────────┬─────────┬───────────┬───────────┬────────────┐\n");
+    printf("\t│ %-9s │ %-7s │ %-9s │ %-9s │ %-10s │\n", "nacin", "niti/WG", "iteracije", "cas [s]", "pohitritev");
+    printf("\t├───────────┼─────────┼───────────┼───────────┼────────────┤\n");
     flush(cout);
     
     {
         TIMER(time_seq)
         iter_seq = pages.rank();
     }
-    printf("\t│ %-9s │ %4u │ %9u │ %9.5f │ %10.5f │\n", "sekvencno", 1, iter_seq, time_seq, time_seq / time_seq);
+    printf("\t│ %-9s │ %7u │ %9u │ %9.5f │ %10.5f │\n", "sekvencno", 1, iter_seq, time_seq, time_seq / time_seq);
     flush(cout);
 
     // seštej range strani
@@ -88,7 +149,7 @@ int main(int argc, char **argv)
             TIMER(time_omp)
             iter_omp = pages.rank_omp(nthreads);
         }
-        printf("\t│ %-9s │ %4u │ %9u │ %9.5f │ %10.5f │\n", "OpenMP", nthreads, iter_omp, time_omp, time_seq / time_omp);
+        printf("\t│ %-9s │ %7u │ %9u │ %9.5f │ %10.5f │\n", "OpenMP", nthreads, iter_omp, time_omp, time_seq / time_omp);
         flush(cout);
     }
 
@@ -104,14 +165,9 @@ int main(int argc, char **argv)
     }
     sort(ranked_omp.begin(), ranked_omp.end(), comp);
 
-    // OpenCL    
-    {
-        TIMER(time_ocl)
-        iter_ocl = Graph4CL_rank(&pages4cl);
-    }
-    printf("\t│ %-9s │ %4u │ %9u │ %9.5f │ %10.5f │\n", "OpenCL", max_threads, iter_ocl, time_ocl, time_seq / time_ocl);
-    printf("\t└───────────┴──────┴───────────┴───────────┴────────────┘\n");
-    printf("\n");
+    find_optimal_wg_size(&pages4cl, 1, 256, time_seq, FLT_MAX);
+
+    printf("\t└───────────┴─────────┴───────────┴───────────┴────────────┘\n\n");
 
     // seštej range strani
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {

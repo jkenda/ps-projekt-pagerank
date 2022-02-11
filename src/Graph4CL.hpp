@@ -38,7 +38,7 @@ struct Graph4CL
     float data_size();
 };
 
-uint32_t Graph4CL_rank(Graph4CL *graph);
+uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size);
 
 /*
 definicija struktur v OpenCL:
