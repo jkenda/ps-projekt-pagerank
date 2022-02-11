@@ -10,13 +10,15 @@ Node4CL;
 
 
 __kernel void initranks(__global Node4CL *nodes, 
-                        uint nnodes)
+                        uint nnodes,
+                        __global double *ranks)
 {														
     int gid = get_global_id(0);
 
     while(gid < nnodes) 
     {
-        nodes[gid].rank = (1.0 / nnodes);
+        // nodes[gid].rank = (1.0 / nnodes);
+        ranks[gid] = (1.0 / nnodes);
         nodes[gid].rank_prev = 1.0;
 
         gid += get_global_size(0);

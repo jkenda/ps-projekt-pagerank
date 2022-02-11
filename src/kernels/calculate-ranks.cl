@@ -14,7 +14,8 @@ __kernel void calcranks(__global Node4CL *nodes,
                        __global const uint *link_ids,
                        __global bool *stop,
                        uint nnodes,
-                       double sink_sum)
+                       double sink_sum,
+                       __global double *ranks)
 {														
     int gid = get_global_id(0);
     double d = 0.85;
@@ -33,7 +34,8 @@ __kernel void calcranks(__global Node4CL *nodes,
             for (uint i = from; i < to; i++) 
             {
                 index = offsets[link_ids[i]];
-                sum += nodes[index].rank / nodes[index].nlinks_out;
+                // sum += nodes[index].rank / nodes[index].nlinks_out;
+                sum += ranks[index] / nodes[index].nlinks_out;
             }
 
             nodes[gid].rank_new = ((1.0 - d) + d * sink_sum) / nnodes + d * sum;

@@ -22,6 +22,8 @@ struct Graph4CL
 
     uint32_t *link_ids;     // povezave
     uint32_t *sink_offsets; // sink-i
+    
+    rank_t *ranks;     // rank-i
 
     uint32_t nnodes, nedges; // št. strani, povezav
     uint32_t nsinks;         // št. ponorov

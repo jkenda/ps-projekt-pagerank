@@ -115,14 +115,16 @@ int main(int argc, char **argv)
 
     // seštej range strani
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {
-        Node4CL &node = pages4cl.nodes[i]; 
-        sum_ocl += node.rank;
+        // Node4CL &node = pages4cl.nodes[i]; 
+        // sum_ocl += node.rank;
+        sum_ocl += pages4cl.ranks[i];
     }
 
     // sortiraj range strani po velikosti
     vector<Node4CL> ranked_ocl;
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {
-        Node4CL &node = pages4cl.nodes[i]; 
+        Node4CL &node = pages4cl.nodes[i];
+        node.rank = pages4cl.ranks[i];
         ranked_ocl.emplace_back(node);
     }
     sort(ranked_ocl.begin(), ranked_ocl.end(), comp4cl);

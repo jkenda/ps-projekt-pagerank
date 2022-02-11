@@ -12,24 +12,28 @@ Node4CL;
 
 
 __kernel void sortranks(__global Node4CL *nodes, 
-                        uint nnodes)
+                        uint nnodes,
+                        __global double *ranks)
 {														
     int gid = get_global_id(0);
 
     while(gid < nnodes) 
     {
         if (nodes[gid].rank_prev != 0.0) {
-            double diff = nodes[gid].rank - nodes[gid].rank_prev;
+            // double diff = nodes[gid].rank - nodes[gid].rank_prev;
+            double diff = ranks[gid] - nodes[gid].rank_prev;
             if (diff < 0) {
                 diff *= -1;
             }
 
             if (diff < DELTA) {
-                nodes[gid].rank = nodes[gid].rank_new;
+                // nodes[gid].rank = nodes[gid].rank_new;
                 nodes[gid].rank_prev = 0.0;
             } else {
-                nodes[gid].rank_prev = nodes[gid].rank;
-                nodes[gid].rank = nodes[gid].rank_new;
+                // nodes[gid].rank_prev = nodes[gid].rank;
+                // nodes[gid].rank = nodes[gid].rank_new;
+                nodes[gid].rank_prev = ranks[gid];
+                ranks[gid] = nodes[gid].rank_new;
             }
         }
 
