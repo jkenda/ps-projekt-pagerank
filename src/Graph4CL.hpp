@@ -33,9 +33,17 @@ struct Graph4CL
     std::vector<uint32_t> offsets_v;
     std::vector<uint32_t> link_ids_v;
     std::vector<uint32_t> sink_offsets_v;
+    
+    cl_context context;
+    cl_command_queue command_queue;
+    cl_kernel initranks_kernel;
+    cl_kernel calcranks_kernel;
+    cl_kernel sortranks_kernel;
+    // cl_kernel sinksum_kernel;
 
     Graph4CL(const Graph &graph);
     float data_size();
+
 };
 
 uint32_t Graph4CL_rank(Graph4CL *graph);
