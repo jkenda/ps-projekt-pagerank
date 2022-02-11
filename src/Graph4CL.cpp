@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <CL/cl.h>
 #include "Graph4CL.hpp"

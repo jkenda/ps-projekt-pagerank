@@ -1,3 +1,5 @@
+#define DELTA (1e-16)
+
 typedef struct 
 {
     uint id;
@@ -13,7 +15,6 @@ __kernel void sortranks(__global Node4CL *nodes,
                         uint nnodes)
 {														
     int gid = get_global_id(0);
-    double delta = 1e-12;
 
     while(gid < nnodes) 
     {
@@ -23,7 +24,7 @@ __kernel void sortranks(__global Node4CL *nodes,
                 diff *= -1;
             }
 
-            if (diff < delta) {
+            if (diff < DELTA) {
                 nodes[gid].rank = nodes[gid].rank_new;
                 nodes[gid].rank_prev = 0.0;
             } else {

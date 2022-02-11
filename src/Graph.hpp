@@ -5,7 +5,7 @@
 
 #define CHUNK_SIZE 128
 
-#define DELTA 1e-12L
+#define DELTA 1e-16L
 #define D 0.85L
 
 typedef double rank_t;

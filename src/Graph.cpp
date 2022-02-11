@@ -135,6 +135,8 @@ uint32_t Graph::rank()
             sink_sum += sink_node->rank;
         }
 
+        sink_sum = ((1.0 - D) + D * sink_sum) / nnodes;
+
         for (Node &node : nodes) {
             if (node.rank_prev == 0.0) continue;
 
@@ -146,7 +148,7 @@ uint32_t Graph::rank()
                 sum += src->rank / src->nlinks_out;
             }
 
-            node.rank_new = ((1.0 - D) + D * sink_sum) / nnodes + D * sum;
+            node.rank_new = sink_sum + D * sum;
         }
 
         if (stop) break;
@@ -196,6 +198,9 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
                 sink_sum += sink_nodes[i]->rank;
             }
 
+            #pragma omp single
+            sink_sum = ((1.0 - D) + D * sink_sum) / nnodes;
+
             #pragma omp for
             for (uint32_t i = 0; i < nnodes; i++) {
                 if (nodes[i].rank_prev == 0.0) continue;
@@ -208,7 +213,7 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
                     sum += src->rank / src->nlinks_out;
                 }
 
-                nodes[i].rank_new = ((1.0 - D) + D * sink_sum) / nnodes + D * sum;
+                nodes[i].rank_new = sink_sum + D * sum;
             }
 
             #pragma omp single
