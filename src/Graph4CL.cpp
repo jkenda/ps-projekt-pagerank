@@ -4,7 +4,6 @@
 #include <CL/cl.h>
 #include "Graph4CL.hpp"
 
-#define WORKGROUP_SIZE	(256)
 #define MAX_SOURCE_SIZE (16384)
 
 using namespace std;
@@ -147,14 +146,13 @@ float Graph4CL::data_size()
 }
 
 
-uint32_t Graph4CL_rank(Graph4CL *graph)
+uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
 {
 	cl_int ret;
     
     // SET WORK SIZES
-    size_t local_item_size = WORKGROUP_SIZE;
-	size_t num_groups = ((graph->nnodes - 1) / local_item_size + 1);
-	size_t global_item_size = num_groups * local_item_size;
+	size_t num_groups = ((graph->nnodes - 1) / wg_size + 1);
+	size_t global_item_size = num_groups * wg_size;
 
 	// size_t sinksum_num_groups = ((graph->nsinks - 1) / local_item_size + 1);
 	// size_t sinksum_global_item_size = num_groups * local_item_size;
@@ -209,7 +207,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
 
     // initranks
     ret = clEnqueueNDRangeKernel(graph->command_queue, graph->initranks_kernel, 1, NULL, 
-                                 &global_item_size, &local_item_size, 0, NULL, NULL);
+                                 &global_item_size, &wg_size, 0, NULL, NULL);
     while(true) {
         sink_sum = 0;
         iterations++;
@@ -217,9 +215,9 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
         // sinksum
         // https://stackoverflow.com/questions/18056677/opencl-double-precision-different-from-cpu-double-precision/18058130
         // ret = clSetKernelArg(sinksum_kernel, 4, local_item_size * sizeof(double), NULL);
-        // ret = clEnqueueNDRangeKernel(command_queue, sinksum_kernel, 1, NULL, 
-        //                              &sinksum_global_item_size, &local_item_size, 0, NULL, NULL);
-        // ret = clEnqueueReadBuffer(command_queue, p_mem_obj, CL_TRUE, 0, sinksum_num_groups * sizeof(double),
+        // ret = clEnqueueNDRangeKernel(graph->command_queue, graph->sinksum_kernel, 1, NULL, 
+        //                              &sinksum_global_item_size, &wg_size, 0, NULL, NULL);
+        // ret = clEnqueueReadBuffer(graph->command_queue, p_mem_obj, CL_TRUE, 0, sinksum_num_groups * sizeof(double),
         //                           p, 0, NULL, NULL);
         // for (i = 0; i < sinksum_num_groups; i++)
 		//     sink_sum += p[i];
@@ -233,7 +231,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
 
         // calcranks
         ret = clEnqueueNDRangeKernel(graph->command_queue, graph->calcranks_kernel, 1, NULL, 
-                                     &global_item_size, &local_item_size, 0, NULL, NULL);
+                                     &global_item_size, &wg_size, 0, NULL, NULL);
 
         // stopcheck
         ret = clEnqueueReadBuffer(graph->command_queue, stop_mem_obj, CL_TRUE, 0, sizeof(bool),
@@ -247,7 +245,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
         
         // sortranks
         ret = clEnqueueNDRangeKernel(graph->command_queue, graph->sortranks_kernel, 1, NULL, 
-                                     &global_item_size, &local_item_size, 0, NULL, NULL);
+                                     &global_item_size, &wg_size, 0, NULL, NULL);
     }
 
     ret = clEnqueueReadBuffer(graph->command_queue, ranks_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(rank_t),
