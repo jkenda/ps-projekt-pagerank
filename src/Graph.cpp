@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
+#include <omp.h>
 #include "Graph.hpp"
 
 using namespace std;
@@ -174,9 +175,12 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
     bool stop;
     rank_t sink_sum;
     uint32_t iterations = 0;
+    bool l_stop[nthreads];
 
     #pragma omp parallel num_threads(nthreads)
     {
+        int thread_num = omp_get_thread_num();
+
         #pragma omp for
         for (uint32_t i = 0; i < nnodes; i++) {
             nodes[i].rank = 1.0 / nnodes;
@@ -191,7 +195,7 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
                 iterations++;
             }
 
-            bool l_stop = true;
+            l_stop[thread_num] = true;
 
             #pragma omp for reduction(+: sink_sum)
             for (uint32_t i = 0; i < nsinks; i++) {
@@ -201,11 +205,11 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
             #pragma omp single
             sink_sum = ((1.0 - D) + D * sink_sum) / nnodes;
 
-            #pragma omp for
+            #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
                 if (nodes[i].rank_prev == 0.0) continue;
 
-                l_stop = false;
+                l_stop[thread_num] = false;
 
                 rank_t sum = 0;
 
@@ -221,9 +225,10 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
             #pragma omp barrier
 
             // izpolnjeni vsi lokalni ustavitveni pogoji -> izpolnjen ustavitveni pogoj
-            #pragma omp atomic
-            stop &= l_stop;
-            #pragma omp barrier
+            #pragma omp for reduction(&&: stop)
+            for (uint32_t i = 0; i < nthreads; i++) {
+                stop = stop && l_stop[i];
+            }
 
             if (stop) break;
 
