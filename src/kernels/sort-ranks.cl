@@ -3,7 +3,7 @@
 typedef struct 
 {
     uint id;
-    double rank, rank_new, rank_prev;
+    double rank_new, rank_prev;
     uint nlinks_out;
     uint nlinks_in;
     uint link_in_ids;

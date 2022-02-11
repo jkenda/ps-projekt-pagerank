@@ -46,7 +46,7 @@ Graph4CL::Graph4CL(const Graph &graph)
     link_ids = link_ids_v.data();
     sink_offsets = sink_offsets_v.data();
 
-    ranks = (double *)malloc(nnodes * sizeof(double));
+    ranks = (rank_t *)malloc(nnodes * sizeof(rank_t));
 }
 
 float Graph4CL::data_size()
@@ -84,17 +84,17 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
     initsrc[source_size] = '\0';
     fclose(fp);
 
-    char *sinksumsrc;
-    fp = fopen("./src/kernels/sink-sum.cl", "r");
-    if(!fp)
-    {
-        fprintf(stderr, ":-(\n");
-        return 1;
-    }
-    sinksumsrc = (char *)malloc(MAX_SOURCE_SIZE);
-    source_size = fread(sinksumsrc, 1, MAX_SOURCE_SIZE, fp);
-    sinksumsrc[source_size] = '\0';
-    fclose(fp);
+    // char *sinksumsrc;
+    // fp = fopen("./src/kernels/sink-sum.cl", "r");
+    // if(!fp)
+    // {
+    //     fprintf(stderr, ":-(\n");
+    //     return 1;
+    // }
+    // sinksumsrc = (char *)malloc(MAX_SOURCE_SIZE);
+    // source_size = fread(sinksumsrc, 1, MAX_SOURCE_SIZE, fp);
+    // sinksumsrc[source_size] = '\0';
+    // fclose(fp);
 
     char *calcsrc;
     fp = fopen("./src/kernels/calculate-ranks.cl", "r");
@@ -181,7 +181,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph)
 
     // cl_kernel sinksum_kernel = clCreateKernel(program2, "sinksum", &ret);
 
-    // ret = clSetKernelArg(sinksum_kernel, 0, sizeof(cl_mem), (void *)&nodes_mem_obj);
+    // ret = clSetKernelArg(sinksum_kernel, 0, sizeof(cl_mem), (void *)&ranks_mem_obj);
     // ret = clSetKernelArg(sinksum_kernel, 1, sizeof(cl_mem), (void *)&sink_offsets_mem_obj);
     // ret = clSetKernelArg(sinksum_kernel, 2, sizeof(cl_uint), (void *)&(graph->nsinks));
     // ret = clSetKernelArg(sinksum_kernel, 3, sizeof(cl_mem), (void *)&p_mem_obj);

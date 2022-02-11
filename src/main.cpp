@@ -10,7 +10,7 @@
 using namespace std;
 
 bool comp(const Node &a, const Node &b){ return a.rank > b.rank; }
-bool comp4cl(const Node4CL &a, const Node4CL &b){ return a.rank > b.rank; }
+bool comp4cl(const pair<rank_t,Node4CL> &a, const pair<rank_t,Node4CL> &b){ return a.first > b.first; }
 
 int main(int argc, char **argv)
 {
@@ -115,17 +115,13 @@ int main(int argc, char **argv)
 
     // seštej range strani
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {
-        // Node4CL &node = pages4cl.nodes[i]; 
-        // sum_ocl += node.rank;
         sum_ocl += pages4cl.ranks[i];
     }
 
     // sortiraj range strani po velikosti
-    vector<Node4CL> ranked_ocl;
+    vector<pair<rank_t,Node4CL>> ranked_ocl;
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {
-        Node4CL &node = pages4cl.nodes[i];
-        node.rank = pages4cl.ranks[i];
-        ranked_ocl.emplace_back(node);
+        ranked_ocl.emplace_back(make_pair(pages4cl.ranks[i], pages4cl.nodes[i]));
     }
     sort(ranked_ocl.begin(), ranked_ocl.end(), comp4cl);
 
@@ -152,7 +148,7 @@ int main(int argc, char **argv)
     for (uint32_t i = 0; i < ndisplay; i++) {
         printf("\t│ %6u │ %7lu │ %8.3e │    ", ranked_seq[i].id, ranked_seq[i].links_in.size(), ranked_seq[i].rank);
         printf(  "│ %6u │ %7lu │ %8.3e │    ", ranked_omp[i].id, ranked_omp[i].links_in.size(), ranked_omp[i].rank);
-        printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i].id, ranked_ocl[i].nlinks_in, ranked_ocl[i].rank);
+        printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i].second.id, ranked_ocl[i].second.nlinks_in, ranked_ocl[i].first);
     }
     printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
     printf("\t                    (sekvencno)                            (OpenMP)                            (OpenCL)\n");
@@ -167,7 +163,7 @@ int main(int argc, char **argv)
     for (uint32_t i = pages.nnodes; i > pages.nnodes-ndisplay; i--) {
         printf("\t│ %6u │ %7lu │ %8.3e │    ", ranked_seq[i-1].id, ranked_seq[i-1].links_in.size(), ranked_seq[i-1].rank);
         printf(  "│ %6u │ %7lu │ %8.3e │    ", ranked_omp[i-1].id, ranked_omp[i-1].links_in.size(), ranked_omp[i-1].rank);
-        printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i-1].id, ranked_ocl[i-1].nlinks_in, ranked_ocl[i-1].rank);
+        printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i-1].second.id, ranked_ocl[i-1].second.nlinks_in, ranked_ocl[i-1].first);
     }
     printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
     printf("\t                    (sekvencno)                            (OpenMP)                            (OpenCL)\n");

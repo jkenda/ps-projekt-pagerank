@@ -1,7 +1,7 @@
 typedef struct 
 {
     uint id;
-    double rank, rank_new, rank_prev;
+    double rank_new, rank_prev;
     uint nlinks_out;
     uint nlinks_in;
     uint link_in_ids;
@@ -34,7 +34,6 @@ __kernel void calcranks(__global Node4CL *nodes,
             for (uint i = from; i < to; i++) 
             {
                 index = offsets[link_ids[i]];
-                // sum += nodes[index].rank / nodes[index].nlinks_out;
                 sum += ranks[index] / nodes[index].nlinks_out;
             }
 

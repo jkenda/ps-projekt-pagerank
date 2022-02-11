@@ -1,15 +1,4 @@
-typedef struct 
-{
-    uint id;
-    double rank, rank_new, rank_prev;
-    uint nlinks_out;
-    uint nlinks_in;
-    uint link_in_ids;
-}
-Node4CL;
-
-
-__kernel void sinksum(__global Node4CL *nodes,
+__kernel void sinksum(__global double *ranks,
                       __global const uint *sink_offsets,
                       uint nsinks,
                       __global double *p,
@@ -22,7 +11,7 @@ __kernel void sinksum(__global Node4CL *nodes,
         partial[lid] = 0.0;
         while(gid < nsinks) 
         {
-            partial[lid] += nodes[sink_offsets[gid]].rank;
+            partial[lid] += ranks[sink_offsets[gid]];
             gid += get_global_size(0);
         }
 
