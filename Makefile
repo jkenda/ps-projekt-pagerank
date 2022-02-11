@@ -1,10 +1,10 @@
 CPPC= g++
-FLAGS= -std=c++17 -O2 -fopenmp -s -mtune=native -lOpenCL
+FLAGS= -std=c++17 -O2 -fopenmp -s -mtune=native
 
 
 all: main.o Graph.o Graph4CL.o Timer.o
 	mkdir -p bin
-	$(CPPC) $(FLAGS) -o bin/main main.o Graph.o Graph4CL.o Timer.o
+	$(CPPC) $(FLAGS) -o bin/main main.o Graph.o Graph4CL.o Timer.o -lOpenCL
 
 main.o: src/main.cpp
 	$(CPPC) $(FLAGS) -c -o main.o src/main.cpp
