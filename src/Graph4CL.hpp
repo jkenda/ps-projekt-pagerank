@@ -7,7 +7,6 @@
 struct Node4CL
 {
     id_t id;
-    rank_t rank_new, rank_prev; // rangiranje
     uint32_t nlinks_out;        // št. izhodnih povezav
     uint32_t nlinks_in;         // št. vhodnih povezav
     uint32_t links_offset;      // odmik v tabeli links

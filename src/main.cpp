@@ -112,12 +112,12 @@ int main(int argc, char **argv)
         TIMER(time_read)
         pages.read(filename);
     }
-    cout << time_read << " s\n";
+    cout << time_read << " s\n"; flush(cout);
 
     // sestavi graph za OpenCL iz obstoječega grafa
-    cout << "\tgradim strukturo za OpenCL... ";
+    cout << "\tgradim strukturo za OpenCL... "; flush(cout);
     Graph4CL pages4cl(pages);
-    cout << "zgrajeno.\n\n";
+    cout << "zgrajeno.\n\n"; flush(cout);
 
     printf("OSNOVNI PODATKI\n");
     // izpiši osnovne informacije o grafu

@@ -1,7 +1,7 @@
-__kernel void sinksum(__global double *ranks,
-                      __global const uint *sink_offsets,
-                      uint nsinks,
+__kernel void sinksum(__global const uint *sink_offsets,
+                      __global double *ranks,
                       __global double *p,
+                      uint nsinks,
                       __local double *partial)
 {
     uint lid = get_local_id(0);														
@@ -15,7 +15,6 @@ __kernel void sinksum(__global double *ranks,
         for (gid = get_global_id(0); gid < nsinks; gid += gsize) 
         {
             partial[lid] += ranks[sink_offsets[gid]];
-            gid += 
         }
 
         barrier(CLK_LOCAL_MEM_FENCE);
