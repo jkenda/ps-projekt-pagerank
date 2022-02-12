@@ -3,3 +3,4 @@ bin/
 .vscode
 output
 callgrind*
+prepleti

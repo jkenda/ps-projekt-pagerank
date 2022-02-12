@@ -215,17 +215,17 @@ int main(int argc, char **argv)
     int32_t ndisplay = min(ranked_seq.size(), 10UL);
 
     printf("10 STRANI Z NAVIŠJIM RANGOM IN 10 Z NAJNIŽJIM\n");
-    printf("\t┌────────┬─────────────┬───────────┐        ┌────────┬─────────────┬───────────┐\n");
-    printf("\t│ %-6s │ %-11s │ %-9s │        ", "id", "st. povezav", "rang");
-    printf(  "│ %-6s │ %-11s │ %-9s │\n",       "id", "st. povezav", "rang");
-    printf("\t├────────┼─────────────┼───────────┤        ├────────┼─────────────┼───────────┤\n");
+    printf("\t┌──────────┬─────────────┬───────────┐        ┌──────────┬─────────────┬───────────┐\n");
+    printf("\t│ %-8s │ %-11s │ %-9s │        ", "id", "st. povezav", "rang");
+    printf(  "│ %-8s │ %-11s │ %-9s │\n",       "id", "st. povezav", "rang");
+    printf("\t├──────────┼─────────────┼───────────┤        ├──────────┼─────────────┼───────────┤\n");
     for (uint32_t i = 0; i < ndisplay; i++) {
         uint32_t j = pages.nnodes - 1 - i;
-        printf("\t│ %6u │ %11lu │ %8.3e │        ", ranked_omp[i].id, ranked_omp[i].links_in.size(), ranked_omp[i].rank);
-        printf(  "│ %6u │ %11lu │ %8.3e │\n"      , ranked_omp[j].id, ranked_omp[j].links_in.size(), ranked_omp[j].rank);
+        printf("\t│ %8u │ %11lu │ %8.3e │        ", ranked_omp[i].id, ranked_omp[i].links_in.size(), ranked_omp[i].rank);
+        printf(  "│ %8u │ %11lu │ %8.3e │\n"      , ranked_omp[j].id, ranked_omp[j].links_in.size(), ranked_omp[j].rank);
     }
-    printf("\t└────────┴─────────────┴───────────┘        └────────┴─────────────┴───────────┘\n");
-    printf("\t                         (najvisji)                                  (najnizji) \n");
+    printf("\t└──────────┴─────────────┴───────────┘        └──────────┴─────────────┴───────────┘\n");
+    printf("\t                           (najvisji)                                    (najnizji) \n");
     printf("\n");
 
     printf("UJEMANJE VRSTNEGA REGA\n");
