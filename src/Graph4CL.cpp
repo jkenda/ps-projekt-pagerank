@@ -227,6 +227,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
         for (uint32_t i = 0; i < graph->nsinks; i++) {
             sink_sum += graph->ranks[graph->sink_offsets[i]];
         }
+        sink_sum =  ((1.0 - D) + D * sink_sum) / graph->nnodes;
         ret = clSetKernelArg(graph->calcranks_kernel, 5, sizeof(cl_double), (void *)&sink_sum);
 
         // calcranks

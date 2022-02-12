@@ -13,6 +13,25 @@ using namespace std;
 bool comp(const Node &a, const Node &b){ return a.rank > b.rank; }
 bool comp4cl(const pair<rank_t,Node4CL> &a, const pair<rank_t,Node4CL> &b){ return a.first > b.first; }
 
+uint32_t eq_omp(vector<Node> seq, vector<Node> omp)
+{
+    uint32_t eq = 0;
+    for (size_t i = 0; i < seq.size(); i++) {
+        if (seq[i].id == omp[i].id) eq++;
+    }
+    return eq;
+}
+
+uint32_t eq_ocl(vector<Node> seq, vector<std::pair<rank_t, Node4CL>> ocl)
+{
+    uint32_t eq = 0;
+    for (size_t i = 0; i < seq.size(); i++) {
+        if (seq[i].id == ocl[i].second.id) eq++;
+    }
+    return eq;
+
+}
+
 void find_optimal_wg_size(Graph4CL *pages4cl, uint32_t lower, uint32_t upper, float time_seq, float min)
 {
     float time_lower, time_upper, time_mid;
@@ -195,33 +214,22 @@ int main(int argc, char **argv)
 
     int32_t ndisplay = min(ranked_seq.size(), 10UL);
 
-    printf("10 STRANI Z NAVIŠJIM RANGOM\n");
-    printf("\t┌────────┬─────────┬───────────┐    ┌────────┬─────────┬───────────┐    ┌────────┬─────────┬───────────┐\n");
-    printf("\t│ %-6s │ %7s │ %-9s │    ", "id", "povezav", "rank");
-    printf(  "│ %-6s │ %7s │ %-9s │    ", "id", "povezav", "rank");
-    printf(  "│ %-6s │ %7s │ %-9s │\n", "id", "povezav", "rank");
-    printf("\t├────────┼─────────┼───────────┤    ├────────┼─────────┼───────────┤    ├────────┼─────────┼───────────┤\n");
+    printf("10 STRANI Z NAVIŠJIM RANGOM IN 10 Z NAJNIŽJIM\n");
+    printf("\t┌────────┬─────────────┬───────────┐        ┌────────┬─────────────┬───────────┐\n");
+    printf("\t│ %-6s │ %-11s │ %-9s │        ", "id", "st. povezav", "rang");
+    printf(  "│ %-6s │ %-11s │ %-9s │\n",       "id", "st. povezav", "rang");
+    printf("\t├────────┼─────────────┼───────────┤        ├────────┼─────────────┼───────────┤\n");
     for (uint32_t i = 0; i < ndisplay; i++) {
-        printf("\t│ %6u │ %7lu │ %8.3e │    ", ranked_seq[i].id, ranked_seq[i].links_in.size(), ranked_seq[i].rank);
-        printf(  "│ %6u │ %7lu │ %8.3e │    ", ranked_omp[i].id, ranked_omp[i].links_in.size(), ranked_omp[i].rank);
-        printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i].second.id, ranked_ocl[i].second.nlinks_in, ranked_ocl[i].first);
+        uint32_t j = pages.nnodes - 1 - i;
+        printf("\t│ %6u │ %11lu │ %8.3e │        ", ranked_omp[i].id, ranked_omp[i].links_in.size(), ranked_omp[i].rank);
+        printf(  "│ %6u │ %11lu │ %8.3e │\n"      , ranked_omp[j].id, ranked_omp[j].links_in.size(), ranked_omp[j].rank);
     }
-    printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
-    printf("\t                    (sekvencno)                            (OpenMP)                            (OpenCL)\n");
+    printf("\t└────────┴─────────────┴───────────┘        └────────┴─────────────┴───────────┘\n");
+    printf("\t                         (najvisji)                                  (najnizji) \n");
     printf("\n");
 
-    printf("10 STRANI Z NAJNIŽJIM RANGOM\n");
-    printf("\t┌────────┬─────────┬───────────┐    ┌────────┬─────────┬───────────┐    ┌────────┬─────────┬───────────┐\n");
-    printf("\t│ %-6s │ %7s │ %-9s │    ", "id", "povezav", "rank");
-    printf(  "│ %-6s │ %7s │ %-9s │    ", "id", "povezav", "rank");
-    printf(  "│ %-6s │ %7s │ %-9s │\n", "id", "povezav", "rank");
-    printf("\t├────────┼─────────┼───────────┤    ├────────┼─────────┼───────────┤    ├────────┼─────────┼───────────┤\n");
-    for (uint32_t i = pages.nnodes; i > pages.nnodes-ndisplay; i--) {
-        printf("\t│ %6u │ %7lu │ %8.3e │    ", ranked_seq[i-1].id, ranked_seq[i-1].links_in.size(), ranked_seq[i-1].rank);
-        printf(  "│ %6u │ %7lu │ %8.3e │    ", ranked_omp[i-1].id, ranked_omp[i-1].links_in.size(), ranked_omp[i-1].rank);
-        printf(  "│ %6u │ %7u │ %8.3e │\n"   , ranked_ocl[i-1].second.id, ranked_ocl[i-1].second.nlinks_in, ranked_ocl[i-1].first);
-    }
-    printf("\t└────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘    └────────┴─────────┴───────────┘\n");
-    printf("\t                    (sekvencno)                            (OpenMP)                            (OpenCL)\n");
-    printf("\n");
+    printf("UJEMANJE VRSTNEGA REGA\n");
+    printf("\tUjemanje sekvenčno - OpenMP: %u %%,\n", 100 * eq_omp(ranked_seq, ranked_omp) / pages.nnodes);
+    printf("\tujemanje sekvenčno - OpenCL: %u %%.\n", 100 * eq_ocl(ranked_seq, ranked_ocl) / pages.nnodes);
+    printf("\tujemanje OpenMP    - OpenCL: %u %%.\n", 100 * eq_ocl(ranked_omp, ranked_ocl) / pages.nnodes);
 }

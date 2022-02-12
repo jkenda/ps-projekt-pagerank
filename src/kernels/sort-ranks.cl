@@ -15,9 +15,10 @@ __kernel void sortranks(__global Node4CL *nodes,
                         uint nnodes,
                         __global double *ranks)
 {														
-    int gid = get_global_id(0);
+    uint gsize = get_global_size(0);
 
-    while(gid < nnodes) 
+    #pragma unroll
+    for (uint gid = get_global_id(0); gid < nnodes; gid += gsize) 
     {
         if (nodes[gid].rank_prev != 0.0) {
             // double diff = nodes[gid].rank - nodes[gid].rank_prev;
@@ -36,7 +37,5 @@ __kernel void sortranks(__global Node4CL *nodes,
                 ranks[gid] = nodes[gid].rank_new;
             }
         }
-
-        gid += get_global_size(0);
     }
 }

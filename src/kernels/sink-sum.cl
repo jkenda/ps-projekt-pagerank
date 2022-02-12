@@ -4,15 +4,18 @@ __kernel void sinksum(__global double *ranks,
                       __global double *p,
                       __local double *partial)
 {
-    int lid = get_local_id(0);														
-    int gid = get_global_id(0);
+    uint lid = get_local_id(0);														
+    uint gid = get_global_id(0);
+    uint gsize = get_global_size(0);
 
-    if(gid < nsinks) {
+    if (gid < nsinks) {
         partial[lid] = 0.0;
-        while(gid < nsinks) 
+
+        #pragma unroll
+        for (gid = get_global_id(0); gid < nsinks; gid += gsize) 
         {
             partial[lid] += ranks[sink_offsets[gid]];
-            gid += get_global_size(0);
+            gid += 
         }
 
         barrier(CLK_LOCAL_MEM_FENCE);
