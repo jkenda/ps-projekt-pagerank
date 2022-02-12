@@ -14,7 +14,7 @@ typedef std::uint32_t id_t;
 struct Node
 {
     id_t id;                            // id (številka strani)
-    rank_t rank, rank_new, rank_prev;   // rangiranje
+    rank_t rank, rank_new;   // rangiranje
     uint32_t nlinks_out;                // povezave iz strani
     std::vector<const Node *> links_in; // povezave do strani
 

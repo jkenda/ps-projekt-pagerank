@@ -124,7 +124,7 @@ uint32_t Graph::rank()
 
     for (Node &node : nodes) {
         node.rank = 1.0 / nnodes;
-        node.rank_prev = 1.0;
+        node.rank_new = 1.0;
     }
 
     while (true) {
@@ -139,7 +139,7 @@ uint32_t Graph::rank()
         sink_sum = ((1.0 - D) + D * sink_sum) / nnodes;
 
         for (Node &node : nodes) {
-            if (node.rank_prev == 0.0) continue;
+            if (node.rank_new == 0.0) continue;
 
             stop = false;
 
@@ -155,13 +155,12 @@ uint32_t Graph::rank()
         if (stop) break;
 
         for (Node &node : nodes) {
-            if (node.rank_prev == 0.0) continue;
-            if (abs(node.rank - node.rank_prev) < DELTA) {
+            if (node.rank_new == 0.0) continue;
+            if (abs(node.rank_new - node.rank) < DELTA) {
                 node.rank = node.rank_new;
-                node.rank_prev = 0.0;
+                node.rank_new = 0.0;
             }
             else {
-                node.rank_prev = node.rank;
                 node.rank = node.rank_new;
             }
         }
@@ -184,7 +183,7 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
         #pragma omp for
         for (uint32_t i = 0; i < nnodes; i++) {
             nodes[i].rank = 1.0 / nnodes;
-            nodes[i].rank_prev = 1.0;
+            nodes[i].rank_new = 1.0;
         }
 
         while (true) {
@@ -207,7 +206,7 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
 
             #pragma omp for schedule(dynamic, CHUNK_SIZE)
             for (uint32_t i = 0; i < nnodes; i++) {
-                if (nodes[i].rank_prev == 0.0) continue;
+                if (nodes[i].rank_new == 0.0) continue;
 
                 l_stop[thread_num] = false;
 
@@ -234,13 +233,12 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
 
             #pragma omp for
             for (uint32_t i = 0; i < nnodes; i++) {
-                if (nodes[i].rank_prev == 0.0) continue;
-                if (abs(nodes[i].rank_new - nodes[i].rank_prev) < DELTA) {
+                if (nodes[i].rank_new == 0.0) continue;
+                if (abs(nodes[i].rank_new - nodes[i].rank) < DELTA) {
                     nodes[i].rank = nodes[i].rank_new;
-                    nodes[i].rank_prev = 0.0;
+                    nodes[i].rank_new = 0.0;
                 }
                 else {
-                    nodes[i].rank_prev = nodes[i].rank;
                     nodes[i].rank = nodes[i].rank_new;
                 }
             }

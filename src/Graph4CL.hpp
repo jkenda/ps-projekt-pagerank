@@ -8,9 +8,9 @@ struct Node4CL
 {
     id_t id;
     rank_t rank_new, rank_prev; // rangiranje
-    uint32_t nlinks_out;              // št. izhodnih povezav
-    uint32_t nlinks_in;               // št. vhodnih povezav
-    uint32_t links_offset;            // odmik v tabeli links
+    uint32_t nlinks_out;        // št. izhodnih povezav
+    uint32_t nlinks_in;         // št. vhodnih povezav
+    uint32_t links_offset;      // odmik v tabeli links
 
     Node4CL(id_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset);
 };
@@ -21,7 +21,7 @@ struct Graph4CL
     uint32_t *links;        // povezave
     uint32_t *sink_offsets; // ponori
     
-    rank_t *ranks;     // rank-i
+    rank_t *ranks; // rangi
 
     uint32_t nnodes, nedges; // št. strani, povezav
     uint32_t nsinks;         // št. ponorov
