@@ -184,6 +184,7 @@ int main(int argc, char **argv)
     }
     sort(ranked_omp.begin(), ranked_omp.end(), comp);
 
+    // OpenCL
     find_optimal_wg_size(&pages4cl, 1, 256, time_seq, FLT_MAX);
 
     printf("\t└───────────┴─────────┴───────────┴───────────┴────────────┘\n\n");
@@ -199,6 +200,8 @@ int main(int argc, char **argv)
         ranked_ocl.emplace_back(make_pair(pages4cl.ranks[i], pages4cl.nodes[i]));
     }
     sort(ranked_ocl.begin(), ranked_ocl.end(), comp4cl);
+
+    cleanup(&pages4cl);
 
     // rangi se morajo sešteti v 1
     printf("SEŠTEVKI RANGOV\n");

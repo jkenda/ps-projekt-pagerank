@@ -32,14 +32,20 @@ struct Graph4CL
     
     cl_context context;
     cl_command_queue command_queue;
+    cl_program program;
     cl_kernel initranks_kernel;
     cl_kernel calcranks_kernel;
     cl_kernel sortranks_kernel;
     // cl_kernel sinksum_kernel;
+    cl_mem nodes_mem_obj;
+    cl_mem ranks_mem_obj;
+    cl_mem ranks_new_mem_obj;
+    cl_mem links_mem_obj;
+    cl_mem stop_mem_obj;
 
     Graph4CL(const Graph &graph);
     float data_size();
-
 };
 
+void cleanup(Graph4CL *graph);
 uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size);

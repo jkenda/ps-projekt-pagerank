@@ -50,54 +50,12 @@ Graph4CL::Graph4CL(const Graph &graph)
     size_t source_size;
 
     // READ KERNELS FROM .CL FILES
-    char *initsrc;
-    fp = fopen("./src/kernels/initialize-ranks.cl", "r");
-    // if(!fp)
-    // {
-    //     fprintf(stderr, ":-(\n");
-    //     return 1;
-    // }
-    initsrc = (char *)malloc(MAX_SOURCE_SIZE);
-    source_size = fread(initsrc, 1, MAX_SOURCE_SIZE, fp);
-    initsrc[source_size] = '\0';
+    char *godsrc;
+    fp = fopen("./src/god-kernel.cl", "r");
+    godsrc = (char *)malloc(MAX_SOURCE_SIZE);
+    source_size = fread(godsrc, 1, MAX_SOURCE_SIZE * 4, fp);
+    godsrc[source_size] = '\0';
     fclose(fp);
-
-
-    char *calcsrc;
-    fp = fopen("./src/kernels/calculate-ranks.cl", "r");
-    // if(!fp)
-    // {
-    //     fprintf(stderr, ":-(\n");
-    //     return 1;
-    // }
-    calcsrc = (char *)malloc(MAX_SOURCE_SIZE);
-    source_size = fread(calcsrc, 1, MAX_SOURCE_SIZE, fp);
-    calcsrc[source_size] = '\0';
-    fclose(fp);
-
-    char *sortsrc;
-    fp = fopen("./src/kernels/sort-ranks.cl", "r");
-    // if(!fp)
-    // {
-    //     fprintf(stderr, ":-(\n");
-    //     return 1;
-    // }
-    sortsrc = (char *)malloc(MAX_SOURCE_SIZE);
-    source_size = fread(sortsrc, 1, MAX_SOURCE_SIZE, fp);
-    sortsrc[source_size] = '\0';
-    fclose(fp);
-    
-    // char *sinksumsrc;
-    // fp = fopen("./src/kernels/sink-sum.cl", "r");
-    // if(!fp)
-    // {
-    //     fprintf(stderr, ":-(\n");
-    //     return 1;
-    // }
-    // sinksumsrc = (char *)malloc(MAX_SOURCE_SIZE);
-    // source_size = fread(sinksumsrc, 1, MAX_SOURCE_SIZE, fp);
-    // sinksumsrc[source_size] = '\0';
-    // fclose(fp);
 
     // ...
 	cl_platform_id	platform_id[10];
@@ -114,22 +72,19 @@ Graph4CL::Graph4CL(const Graph &graph)
 
    	command_queue = clCreateCommandQueue(context, device_id[0], 0, &ret);
 
-    // PROGRAM OBJECTS                                
-    cl_program program1 = clCreateProgramWithSource(context, 1, (const char **)&initsrc, NULL, &ret);
-    cl_program program2 = clCreateProgramWithSource(context, 1, (const char **)&calcsrc, NULL, &ret);
-    cl_program program3 = clCreateProgramWithSource(context, 1, (const char **)&sortsrc, NULL, &ret);
-    // cl_program program4 = clCreateProgramWithSource(context, 1, (const char **)&sinksumsrc, NULL, &ret);
+    // PROGRAM OBJECT                              
+    program = clCreateProgramWithSource(context, 1, (const char **)&godsrc, NULL, &ret);
 
-    ret = clBuildProgram(program1, 1, &device_id[0], NULL, NULL, NULL);
-    ret = clBuildProgram(program2, 1, &device_id[0], NULL, NULL, NULL);
-    ret = clBuildProgram(program3, 1, &device_id[0], NULL, NULL, NULL);
-    // ret = clBuildProgram(program4, 1, &device_id[0], NULL, NULL, NULL);
+    // BUILD PROGRAM
+    ret = clBuildProgram(program, 1, &device_id[0], NULL, NULL, NULL);
 
     // CREATE KERNELS
-    initranks_kernel = clCreateKernel(program1, "initranks", &ret);
-    calcranks_kernel = clCreateKernel(program2, "calcranks", &ret);
-    sortranks_kernel = clCreateKernel(program3, "sortranks", &ret);
-    // sinksum_kernel = clCreateKernel(program4, "sinksum", &ret);
+    initranks_kernel = clCreateKernel(program, "initranks", &ret);
+    calcranks_kernel = clCreateKernel(program, "calcranks", &ret);
+    sortranks_kernel = clCreateKernel(program, "sortranks", &ret);
+    // sinksum_kernel = clCreateKernel(program, "sinksum", &ret);
+
+    free(godsrc);
 }
 
 float Graph4CL::data_size()
@@ -140,6 +95,23 @@ float Graph4CL::data_size()
         / 1'000'000.0F;
 }
 
+void cleanup(Graph4CL *graph) 
+{
+    clFlush(graph->command_queue);
+	clFinish(graph->command_queue);
+	clReleaseKernel(graph->initranks_kernel);
+	clReleaseKernel(graph->calcranks_kernel);
+	clReleaseKernel(graph->sortranks_kernel);
+	// clReleaseKernel(graph->sinksum_kernel);
+    clReleaseMemObject(graph->nodes_mem_obj);
+    clReleaseMemObject(graph->ranks_mem_obj);
+    clReleaseMemObject(graph->ranks_new_mem_obj);
+    clReleaseMemObject(graph->links_mem_obj);
+    clReleaseMemObject(graph->stop_mem_obj);
+	clReleaseProgram(graph->program);
+	clReleaseCommandQueue(graph->command_queue);
+	clReleaseContext(graph->context);
+}
 
 uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
 {
@@ -158,15 +130,15 @@ uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
     stop[0] = true;
     
     // BUFFERS
-    cl_mem nodes_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
+    graph->nodes_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
                                           graph->nnodes * sizeof(Node4CL), graph->nodes, &ret);
-    cl_mem ranks_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_WRITE, 
+    graph->ranks_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_WRITE, 
                                           graph->nnodes * sizeof(rank_t), NULL, &ret);
-    cl_mem ranks_new_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_WRITE, 
+    graph->ranks_new_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_WRITE, 
                                               graph->nnodes * sizeof(rank_t), NULL, &ret);
-    cl_mem links_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
+    graph->links_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
                                              graph->nedges * sizeof(uint32_t), graph->links, &ret);
-    cl_mem stop_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
+    graph->stop_mem_obj = clCreateBuffer(graph->context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
                                          sizeof(bool), stop, &ret);
     // cl_mem sink_offsets_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
     //                                              graph->nsinks * sizeof(uint32_t), graph->sink_offsets, &ret);
@@ -175,20 +147,20 @@ uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
 
     // SET KERNEL ARGS
     // initranks_kernel
-    ret = clSetKernelArg(graph->initranks_kernel, 0, sizeof(cl_mem), (void *)&ranks_mem_obj);
-    ret = clSetKernelArg(graph->initranks_kernel, 1, sizeof(cl_mem), (void *)&ranks_new_mem_obj);
-    ret = clSetKernelArg(graph->initranks_kernel, 2, sizeof(cl_uint), (void *)&(graph->nnodes));
+    ret = clSetKernelArg(graph->initranks_kernel, 0, sizeof(cl_mem), (void *)&graph->ranks_mem_obj);
+    ret = clSetKernelArg(graph->initranks_kernel, 1, sizeof(cl_mem), (void *)&graph->ranks_new_mem_obj);
+    ret = clSetKernelArg(graph->initranks_kernel, 2, sizeof(cl_uint), (void *)&graph->nnodes);
     // calcranks_kernel
-    ret = clSetKernelArg(graph->calcranks_kernel, 0, sizeof(cl_mem), (void *)&nodes_mem_obj);
-    ret = clSetKernelArg(graph->calcranks_kernel, 1, sizeof(cl_mem), (void *)&links_mem_obj);
-    ret = clSetKernelArg(graph->calcranks_kernel, 2, sizeof(cl_mem), (void *)&ranks_mem_obj);
-    ret = clSetKernelArg(graph->calcranks_kernel, 3, sizeof(cl_mem), (void *)&ranks_new_mem_obj);
-    ret = clSetKernelArg(graph->calcranks_kernel, 4, sizeof(cl_mem), (void *)&stop_mem_obj);
-    ret = clSetKernelArg(graph->calcranks_kernel, 5, sizeof(cl_uint), (void *)&(graph->nnodes));
+    ret = clSetKernelArg(graph->calcranks_kernel, 0, sizeof(cl_mem), (void *)&graph->nodes_mem_obj);
+    ret = clSetKernelArg(graph->calcranks_kernel, 1, sizeof(cl_mem), (void *)&graph->links_mem_obj);
+    ret = clSetKernelArg(graph->calcranks_kernel, 2, sizeof(cl_mem), (void *)&graph->ranks_mem_obj);
+    ret = clSetKernelArg(graph->calcranks_kernel, 3, sizeof(cl_mem), (void *)&graph->ranks_new_mem_obj);
+    ret = clSetKernelArg(graph->calcranks_kernel, 4, sizeof(cl_mem), (void *)&graph->stop_mem_obj);
+    ret = clSetKernelArg(graph->calcranks_kernel, 5, sizeof(cl_uint), (void *)&graph->nnodes);
     // sortranks_kernel
-    ret = clSetKernelArg(graph->sortranks_kernel, 0, sizeof(cl_mem), (void *)&ranks_mem_obj);
-    ret = clSetKernelArg(graph->sortranks_kernel, 1, sizeof(cl_mem), (void *)&ranks_new_mem_obj);
-    ret = clSetKernelArg(graph->sortranks_kernel, 2, sizeof(cl_uint), (void *)&(graph->nnodes));
+    ret = clSetKernelArg(graph->sortranks_kernel, 0, sizeof(cl_mem), (void *)&graph->ranks_mem_obj);
+    ret = clSetKernelArg(graph->sortranks_kernel, 1, sizeof(cl_mem), (void *)&graph->ranks_new_mem_obj);
+    ret = clSetKernelArg(graph->sortranks_kernel, 2, sizeof(cl_uint), (void *)&graph->nnodes);
     // sinksum_kernel
     // ret = clSetKernelArg(sinksum_kernel, 0, sizeof(cl_mem), (void *)&sink_offsets_mem_obj);
     // ret = clSetKernelArg(sinksum_kernel, 1, sizeof(cl_mem), (void *)&ranks_mem_obj);
@@ -217,7 +189,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
         // for (i = 0; i < sinksum_num_groups; i++)
 		//     sink_sum += p[i];
         //
-        ret = clEnqueueReadBuffer(graph->command_queue, ranks_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(rank_t), 
+        ret = clEnqueueReadBuffer(graph->command_queue, graph->ranks_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(rank_t), 
                                   graph->ranks, 0, NULL, NULL);
         for (uint32_t i = 0; i < graph->nsinks; i++) {
             sink_sum += graph->ranks[graph->sink_offsets[i]];
@@ -230,13 +202,13 @@ uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
                                      &global_item_size, &wg_size, 0, NULL, NULL);
 
         // stopcheck
-        ret = clEnqueueReadBuffer(graph->command_queue, stop_mem_obj, CL_TRUE, 0, sizeof(bool),
+        ret = clEnqueueReadBuffer(graph->command_queue, graph->stop_mem_obj, CL_TRUE, 0, sizeof(bool),
                                   stop, 0, NULL, NULL);
         if (stop[0]) { 
             break;
         }
         stop[0] = true;
-        ret = clEnqueueWriteBuffer(graph->command_queue, stop_mem_obj, CL_TRUE, 0, sizeof(bool),
+        ret = clEnqueueWriteBuffer(graph->command_queue, graph->stop_mem_obj, CL_TRUE, 0, sizeof(bool),
                                    stop, 0, NULL, NULL);
         
         // sortranks
@@ -244,8 +216,10 @@ uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
                                      &global_item_size, &wg_size, 0, NULL, NULL);
     }
 
-    ret = clEnqueueReadBuffer(graph->command_queue, ranks_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(rank_t),
+    ret = clEnqueueReadBuffer(graph->command_queue, graph->ranks_mem_obj, CL_TRUE, 0, graph->nnodes * sizeof(rank_t),
                               graph->ranks, 0, NULL, NULL);
+    
+    free(stop);
 
     return iterations;
 }
