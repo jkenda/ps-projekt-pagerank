@@ -6,14 +6,13 @@ typedef struct
     double rank_new, rank_prev;
     uint nlinks_out;
     uint nlinks_in;
-    uint link_in_ids;
+    uint links_offset;
 }
 Node4CL;
 
 
 __kernel void calcranks(__global Node4CL *nodes,
-                       __global const uint *offsets,
-                       __global const uint *link_ids,
+                       __global const uint *links,
                        __global bool *stop,
                        uint nnodes,
                        double sink_sum,
@@ -30,13 +29,12 @@ __kernel void calcranks(__global Node4CL *nodes,
         
             double sum = 0;
 
-            uint from = nodes[gid].link_in_ids;
+            uint from = nodes[gid].links_offset;
             uint to = from + nodes[gid].nlinks_in;
 
             for (uint i = from; i < to; i++) 
             {
-                index = offsets[link_ids[i]];
-                sum += ranks[index] / nodes[index].nlinks_out;
+                sum += ranks[links[i]] / nodes[links[i]].nlinks_out;
             }
 
             nodes[gid].rank_new = sink_sum + D * sum;
