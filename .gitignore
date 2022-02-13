@@ -1,8 +1,10 @@
 *.o
 bin/
 .vscode
-output
+output*
 callgrind*
 prepleti
 web-Google/large-web-Google.txt
 web-Google/xlarge-web-Google.txt
+web-Google/xxlarge-web-Google.txt
+web-Google/xxxlarge-web-Google.txt

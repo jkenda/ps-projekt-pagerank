@@ -14,7 +14,7 @@ typedef std::uint32_t id_t;
 struct Node
 {
     id_t id;                            // id (številka strani)
-    rank_t rank, rank_new;   // rangiranje
+    rank_t rank, rank_new;              // rangiranje
     uint32_t nlinks_out;                // povezave iz strani
     std::vector<const Node *> links_in; // povezave do strani
 
@@ -28,7 +28,7 @@ struct Graph
 {
     std::vector<Node> nodes;          // strani
     std::vector<Node *> sink_nodes;   // kazalci do ponornih strani (strani brez izhodnih povezav)
-    uint32_t nnodes, nedges, nsinks;  // št. strani, povezav
+    uint32_t nnodes, nedges, nsinks;  // št. strani, povezav, ponorov
     id_t max_id;                      // največji id strani
 
     Graph();

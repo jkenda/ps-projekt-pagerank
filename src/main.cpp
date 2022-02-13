@@ -207,8 +207,6 @@ int main(int argc, char **argv)
     }
     sort(ranked_ocl.begin(), ranked_ocl.end(), comp4cl);
 
-    cleanup(&pages4cl);
-
     // rangi se morajo sešteti v 1
     printf("SEŠTEVKI RANGOV\n");
     printf("\tRang strani je verjetnost - vsota verjetnosti mora biti 1.\n");
@@ -219,6 +217,12 @@ int main(int argc, char **argv)
     printf("\t│ %-9s │ %15.13lf │\n", "OpenMP"   , sum_omp);
     printf("\t│ %-9s │ %15.13lf │\n", "OpenCL"   , sum_ocl);
     printf("\t└───────────┴─────────────────┘\n");
+    printf("\n");
+
+    printf("UJEMANJE VRSTNEGA REGA\n");
+    printf("\tUjemanje sekvenčno - OpenMP: %u %%,\n", 100 * eq_omp(ranked_seq, ranked_omp) / pages.nnodes);
+    printf("\tujemanje sekvenčno - OpenCL: %u %%.\n", 100 * eq_ocl(ranked_seq, ranked_ocl) / pages.nnodes);
+    printf("\tujemanje OpenMP    - OpenCL: %u %%.\n", 100 * eq_ocl(ranked_omp, ranked_ocl) / pages.nnodes);
     printf("\n");
 
     int32_t ndisplay = min(ranked_seq.size(), 10UL);
@@ -236,9 +240,4 @@ int main(int argc, char **argv)
     printf("\t└──────────┴─────────────┴───────────┘        └──────────┴─────────────┴───────────┘\n");
     printf("\t                           (najvisji)                                    (najnizji) \n");
     printf("\n");
-
-    printf("UJEMANJE VRSTNEGA REGA\n");
-    printf("\tUjemanje sekvenčno - OpenMP: %u %%,\n", 100 * eq_omp(ranked_seq, ranked_omp) / pages.nnodes);
-    printf("\tujemanje sekvenčno - OpenCL: %u %%.\n", 100 * eq_ocl(ranked_seq, ranked_ocl) / pages.nnodes);
-    printf("\tujemanje OpenMP    - OpenCL: %u %%.\n", 100 * eq_ocl(ranked_omp, ranked_ocl) / pages.nnodes);
 }

@@ -43,8 +43,8 @@ struct Graph4CL
     cl_mem stop_mem_obj;
 
     Graph4CL(const Graph &graph);
+    ~Graph4CL();
     float data_size();
 };
 
-void cleanup(Graph4CL *graph);
 uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size);
