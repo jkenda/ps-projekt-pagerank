@@ -53,7 +53,7 @@ Graph4CL::Graph4CL(const Graph &graph)
     char *godsrc;
     fp = fopen("./src/god-kernel.cl", "r");
     godsrc = (char *)malloc(MAX_SOURCE_SIZE);
-    source_size = fread(godsrc, 1, MAX_SOURCE_SIZE * 4, fp);
+    source_size = fread(godsrc, 1, MAX_SOURCE_SIZE, fp);
     godsrc[source_size] = '\0';
     fclose(fp);
 
@@ -67,8 +67,9 @@ Graph4CL::Graph4CL(const Graph &graph)
     cl_device_id	device_id[10];
 	cl_uint			ret_num_devices;
     ret = clGetDeviceIDs(platform_id[0], CL_DEVICE_TYPE_GPU, 10, device_id, &ret_num_devices);
+    printf("%d\n", ret_num_devices);
 
-   	context = clCreateContext(NULL, 1, &device_id[0], NULL, NULL, &ret);
+   	context = clCreateContext(NULL, ret_num_devices, device_id, NULL, NULL, &ret);
 
    	command_queue = clCreateCommandQueue(context, device_id[0], 0, &ret);
 
@@ -76,7 +77,7 @@ Graph4CL::Graph4CL(const Graph &graph)
     program = clCreateProgramWithSource(context, 1, (const char **)&godsrc, NULL, &ret);
 
     // BUILD PROGRAM
-    ret = clBuildProgram(program, 1, &device_id[0], NULL, NULL, NULL);
+    ret = clBuildProgram(program, ret_num_devices, device_id, NULL, NULL, NULL);
 
     // CREATE KERNELS
     initranks_kernel = clCreateKernel(program, "initranks", &ret);
@@ -220,6 +221,14 @@ uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
                               graph->ranks, 0, NULL, NULL);
     
     free(stop);
+
+    clFlush(graph->command_queue);
+	clFinish(graph->command_queue);
+
+    clReleaseMemObject(graph->nodes_mem_obj);
+    clReleaseMemObject(graph->ranks_mem_obj);
+    clReleaseMemObject(graph->links_mem_obj);
+    clReleaseMemObject(graph->stop_mem_obj);
 
     return iterations;
 }

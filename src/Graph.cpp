@@ -192,7 +192,6 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
             {
                 sink_sum = 0;
                 iterations++;
-                // stop = true;
             }
 
             l_stop[thread_num] = true;
@@ -210,7 +209,6 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
                 if (nodes[i].rank_new == 0.0) continue;
 
                 l_stop[thread_num] = false;
-                // stop = false;
 
                 rank_t sum = 0;
 
@@ -230,8 +228,6 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
             for (uint32_t i = 0; i < nthreads; i++) {
                 stop = stop && l_stop[i];
             }
-
-            // #pragma omp barrier
 
             if (stop) break;
 
