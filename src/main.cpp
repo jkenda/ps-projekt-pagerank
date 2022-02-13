@@ -11,7 +11,7 @@
 using namespace std;
 
 bool comp(const Node &a, const Node &b){ return a.rank > b.rank; }
-bool comp4cl(const pair<rank_t,Node4CL> &a, const pair<rank_t,Node4CL> &b){ return a.first > b.first; }
+bool comp4cl(const pair<id_t, rank_t> &a, const pair<id_t, rank_t> &b){ return a.second > b.second; }
 
 uint32_t eq_omp(vector<Node> seq, vector<Node> omp)
 {
@@ -22,11 +22,11 @@ uint32_t eq_omp(vector<Node> seq, vector<Node> omp)
     return eq;
 }
 
-uint32_t eq_ocl(vector<Node> seq, vector<std::pair<rank_t, Node4CL>> ocl)
+uint32_t eq_ocl(vector<Node> seq, vector<std::pair<id_t, rank_t>> ocl)
 {
     uint32_t eq = 0;
     for (size_t i = 0; i < seq.size(); i++) {
-        if (seq[i].id == ocl[i].second.id) eq++;
+        if (seq[i].id == ocl[i].first) eq++;
     }
     return eq;
 
@@ -128,9 +128,15 @@ int main(int argc, char **argv)
     cout << "\tvelikost podatkov : " << pages4cl.data_size() << " MB.\n";
     cout << '\n';
 
-    rank_t sum_seq = 0, sum_omp = 0, sum_ocl = 0;
-    float time_seq, time_omp, time_ocl;
-    uint32_t iter_seq, iter_omp, iter_ocl;
+    rank_t sum_seq = 0; 
+    rank_t sum_omp = 0; 
+    rank_t sum_ocl = 0;
+    float time_seq;
+    float time_omp; 
+    float time_ocl;
+    uint32_t iter_seq; 
+    uint32_t iter_omp; 
+    uint32_t iter_ocl;
 
     /* RANGIRAJ STRANI */
 
@@ -195,9 +201,9 @@ int main(int argc, char **argv)
     }
 
     // sortiraj range strani po velikosti
-    vector<pair<rank_t,Node4CL>> ranked_ocl;
+    vector<pair<id_t, rank_t>> ranked_ocl;
     for (uint32_t i = 0; i < pages4cl.nnodes; i++) {
-        ranked_ocl.emplace_back(make_pair(pages4cl.ranks[i], pages4cl.nodes[i]));
+        ranked_ocl.emplace_back(make_pair(pages4cl.ids[i], pages4cl.ranks[i]));
     }
     sort(ranked_ocl.begin(), ranked_ocl.end(), comp4cl);
 

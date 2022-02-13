@@ -3,7 +3,6 @@
 
 typedef struct 
 {
-    uint id;
     uint nlinks_out;
     uint nlinks_in;
     uint links_offset;

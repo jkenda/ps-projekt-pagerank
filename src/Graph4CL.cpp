@@ -8,24 +8,26 @@
 
 using namespace std;
 
-Node4CL::Node4CL(id_t id, uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset)
-: id(id), nlinks_in(nlinks_in), nlinks_out(nlinks_out), links_offset(links_offset)
+Node4CL::Node4CL(uint32_t nlinks_in, uint32_t nlinks_out, uint32_t links_offset)
+: nlinks_in(nlinks_in), nlinks_out(nlinks_out), links_offset(links_offset)
 {
 }
 
 Graph4CL::Graph4CL(const Graph &graph)
-: nnodes(graph.nnodes), nedges(graph.nedges), max_id(graph.max_id), nsinks(graph.nsinks)
+: nnodes(graph.nnodes), nedges(graph.nedges), nsinks(graph.nsinks)
 {
     nodes_v.reserve(nnodes);
     links_v.reserve(nedges);
     sink_offsets_v.reserve(nsinks);
+    ids.reserve(nnodes);
 
     for (const Node &node : graph.nodes) {
         uint32_t nodes_offset = nodes_v.size();
         uint32_t links_offset = links_v.size();
         uint32_t nlinks_in = node.links_in.size();
 
-        nodes_v.emplace_back(node.id, nlinks_in, node.nlinks_out, links_offset);
+        nodes_v.emplace_back(nlinks_in, node.nlinks_out, links_offset);
+        ids.emplace_back(node.id);
         
         if (node.nlinks_out == 0) {
             sink_offsets_v.emplace_back(nodes_offset);
@@ -91,6 +93,7 @@ Graph4CL::Graph4CL(const Graph &graph)
 float Graph4CL::data_size()
 {
     return (nodes_v.size() * sizeof(Node4CL)
+         + ids.size() * sizeof(id_t)
          + links_v.size() * sizeof(decltype(*links))
          + sink_offsets_v.size() * sizeof(decltype(*sink_offsets)))
         / 1'000'000.0F;
@@ -205,9 +208,7 @@ uint32_t Graph4CL_rank(Graph4CL *graph, const size_t wg_size)
         // stopcheck
         ret = clEnqueueReadBuffer(graph->command_queue, graph->stop_mem_obj, CL_TRUE, 0, sizeof(bool),
                                   stop, 0, NULL, NULL);
-        if (stop[0]) { 
-            break;
-        }
+        if (stop[0]) break;
         stop[0] = true;
         ret = clEnqueueWriteBuffer(graph->command_queue, graph->stop_mem_obj, CL_TRUE, 0, sizeof(bool),
                                    stop, 0, NULL, NULL);

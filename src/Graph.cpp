@@ -174,7 +174,7 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
     bool stop;
     rank_t sink_sum;
     uint32_t iterations = 0;
-    bool l_stop[nthreads];
+    // bool l_stop[nthreads];
 
     #pragma omp parallel num_threads(nthreads)
     {
@@ -192,9 +192,10 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
             {
                 sink_sum = 0;
                 iterations++;
+                stop = true;
             }
 
-            l_stop[thread_num] = true;
+            // l_stop[thread_num] = true;
 
             #pragma omp for reduction(+: sink_sum)
             for (uint32_t i = 0; i < nsinks; i++) {
@@ -208,7 +209,8 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
             for (uint32_t i = 0; i < nnodes; i++) {
                 if (nodes[i].rank_new == 0.0) continue;
 
-                l_stop[thread_num] = false;
+                // l_stop[thread_num] = false;
+                stop = false;
 
                 rank_t sum = 0;
 
@@ -219,15 +221,17 @@ uint32_t Graph::rank_omp(const uint32_t &nthreads)
                 nodes[i].rank_new = sink_sum + D * sum;
             }
 
-            #pragma omp single
-            stop = true;
-            #pragma omp barrier
+            // #pragma omp single
+            // stop = true;
+            // #pragma omp barrier
 
-            // izpolnjeni vsi lokalni ustavitveni pogoji -> izpolnjen ustavitveni pogoj
-            #pragma omp for reduction(&&: stop)
-            for (uint32_t i = 0; i < nthreads; i++) {
-                stop = stop && l_stop[i];
-            }
+            // // izpolnjeni vsi lokalni ustavitveni pogoji -> izpolnjen ustavitveni pogoj
+            // #pragma omp for reduction(&&: stop)
+            // for (uint32_t i = 0; i < nthreads; i++) {
+            //     stop = stop && l_stop[i];
+            // }
+
+            #pragma omp barrier
 
             if (stop) break;
 
